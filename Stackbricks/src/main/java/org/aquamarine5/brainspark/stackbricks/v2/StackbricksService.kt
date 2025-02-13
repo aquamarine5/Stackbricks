@@ -3,11 +3,10 @@ package org.aquamarine5.brainspark.stackbricks.v2
 import android.content.Context
 import androidx.core.content.pm.PackageInfoCompat
 
-class StackbricksService
-<TMP : StackbricksMessageProvider, TPP : StackbricksPackageProvider>(
+class StackbricksService(
     private val context: Context,
-    val messageProvider: TMP,
-    val packageProvider: TPP
+    val messageProvider: StackbricksMessageProvider,
+    val packageProvider: StackbricksPackageProvider
 ) {
     companion object {
         const val TAG = "StackbricksService"
