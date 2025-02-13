@@ -1,9 +1,37 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    id 'maven-publish'
+    alias(libs.plugins.kotlin.compose)
 }
-
+publishing {
+    publications {
+        release(MavenPublication) {
+            groupId = 'org.aquamarine5.brainspark'
+            artifactId = 'stackbricks'
+            version = '2.0.0-alpha2'
+            afterEvaluate {
+                from components.release
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/aquamarine5/Stackbricks")
+            credentials {
+                username = "aquamarine5"
+                password = System.getenv("GHP_TOKEN")
+            }
+        }
+    }
+}
 android {
+    publishing {
+        singleVariant('release') {
+            withSourcesJar()
+        }
+    }
     namespace 'org.aquamarine5.brainspark.stackbricks'
     compileSdk 35
 
@@ -21,15 +49,19 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
     }
     kotlinOptions {
-        jvmTarget = '11'
+        jvmTarget = '21'
     }
+    buildFeatures.compose = true
+    composeOptions.kotlinCompilerExtensionVersion = "1.5.15"
 }
 
 dependencies {
+    implementation libs.fastjson2
+    implementation libs.androidx.compiler
     implementation libs.okhttp
     implementation libs.okio
     implementation libs.androidx.core.ktx
@@ -42,4 +74,5 @@ dependencies {
     testImplementation libs.junit
     androidTestImplementation libs.androidx.junit
     androidTestImplementation libs.androidx.espresso.core
+    debugImplementation libs.androidx.ui.tooling
 }
