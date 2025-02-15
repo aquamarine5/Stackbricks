@@ -8,8 +8,8 @@ import java.util.Date
 class QiniuVersionData(
     override val versionCode: Int,
     override val versionName: String,
-    override val downloadUrl: URL,
+    override val downloadFilename: String,
     override val releaseDate: Date,
-    val rawJson:JSONObject
-) :StackbricksVersionData {
-}
+    override val packageName: String,
+    val rawJson: JSONObject
+) : StackbricksVersionData

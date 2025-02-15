@@ -3,7 +3,7 @@ package org.aquamarine5.brainspark.stackbricks.v2
 import android.content.Context
 import androidx.core.content.pm.PackageInfoCompat
 
-class StackbricksService(
+open class StackbricksService(
     private val context: Context,
     val messageProvider: StackbricksMessageProvider,
     val packageProvider: StackbricksPackageProvider
@@ -12,7 +12,7 @@ class StackbricksService(
         const val TAG = "StackbricksService"
     }
 
-    suspend fun isNeedUpdate(): StackbricksVersionData? {
+    open suspend fun isNeedUpdate(): StackbricksVersionData? {
         val currentVersion = PackageInfoCompat.getLongVersionCode(
             context.packageManager.getPackageInfo(
                 context.packageName,
@@ -25,12 +25,12 @@ class StackbricksService(
     }
 
 
-    suspend fun downloadAndInstallPackage(versionData: StackbricksVersionData) {
+    open suspend fun downloadAndInstallPackage(versionData: StackbricksVersionData) {
         val packageFile = packageProvider.downloadPackage(context, versionData)
         packageFile.installPackage(context)
     }
 
-    suspend fun updateIfAvailable() {
+    open suspend fun updateIfAvailable() {
         isNeedUpdate()?.let {
             downloadAndInstallPackage(it)
         }

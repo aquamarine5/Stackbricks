@@ -20,10 +20,13 @@ class QiniuMessageProvider(
     override suspend fun getLatestVersionData(): QiniuVersionData {
         val configUrl = URL("http://${configuration.host}/${configuration.configFilePath}")
         val req = Request.Builder()
+            .get()
             .url(configUrl)
-            .build()
+        configuration.referer?.let {
+            req.addHeader("Referer", it)
+        }
         return withContext(Dispatchers.IO) {
-            configuration.okHttpClient.newCall(req).execute().use { response ->
+            configuration.okHttpClient.newCall(req.build()).execute().use { response ->
                 if (!response.isSuccessful) {
                     throw IllegalStateException("Unexpected response code: ${response.code}")
                 }
@@ -31,13 +34,14 @@ class QiniuMessageProvider(
                 val rawJson = JSONObject.parseObject(body.string())
                 val versionCode = rawJson.getIntValue("versionCode")
                 val versionName = rawJson.getString("versionName")
-                val downloadUrl = URL(rawJson.getString("downloadUrl"))
+                val downloadUrl = rawJson.getString("downloadUrl")
                 val releaseDate = Date(rawJson.getLongValue("releaseDate"))
                 return@withContext QiniuVersionData(
                     versionCode,
                     versionName,
                     downloadUrl,
                     releaseDate,
+                    rawJson.getString("packageName"),
                     rawJson
                 )
             }

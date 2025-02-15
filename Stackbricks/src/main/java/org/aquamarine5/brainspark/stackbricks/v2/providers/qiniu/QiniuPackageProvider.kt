@@ -23,7 +23,7 @@ class QiniuPackageProvider(
         versionData: StackbricksVersionData
     ): StackbricksPackageFile {
         val req = Request.Builder()
-            .url(versionData.downloadUrl)
+            .url("http://${configuration.host}/${versionData.downloadFilename}")
             .build()
         return withContext(Dispatchers.IO) {
             configuration.okHttpClient.newCall(req).execute().use { response ->

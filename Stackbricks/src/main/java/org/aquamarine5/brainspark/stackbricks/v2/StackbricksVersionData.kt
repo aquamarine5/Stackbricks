@@ -1,12 +1,11 @@
 package org.aquamarine5.brainspark.stackbricks.v2
 
-import java.net.URI
-import java.net.URL
 import java.util.Date
 
-interface StackbricksVersionData{
+interface StackbricksVersionData {
+    val packageName: String
     val versionCode: Int
     val versionName: String
-    val downloadUrl: URL
+    val downloadFilename: String
     val releaseDate: Date
 }

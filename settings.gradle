@@ -1,5 +1,13 @@
 pluginManagement {
     repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/aquamarine5/stackbricks-gradle-plugin")
+            credentials {
+                username = "aquamarine5"
+                password = System.getenv("GHP_TOKEN")
+            }
+        }
         google {
             content {
                 includeGroupByRegex("com\\.android.*")
@@ -16,7 +24,21 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        google()
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/aquamarine5/stackbricks-gradle-plugin")
+            credentials {
+                username = "aquamarine5"
+                password = System.getenv("GHP_TOKEN")
+            }
+        }
+        google {
+            content {
+                includeGroupByRegex("com\\.android.*")
+                includeGroupByRegex("com\\.google.*")
+                includeGroupByRegex("androidx.*")
+            }
+        }
         maven { url 'https://maven.aliyun.com/repository/google' }
         maven { url 'https://maven.aliyun.com/repository/public' }
         mavenCentral()
