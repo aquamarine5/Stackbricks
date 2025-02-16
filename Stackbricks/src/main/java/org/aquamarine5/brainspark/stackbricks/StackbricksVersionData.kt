@@ -1,4 +1,4 @@
-package org.aquamarine5.brainspark.stackbricks.v2
+package org.aquamarine5.brainspark.stackbricks
 
 import java.util.Date
 

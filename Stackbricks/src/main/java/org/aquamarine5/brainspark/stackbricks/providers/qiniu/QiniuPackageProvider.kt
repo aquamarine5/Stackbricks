@@ -1,4 +1,4 @@
-package org.aquamarine5.brainspark.stackbricks.v2.providers.qiniu
+package org.aquamarine5.brainspark.stackbricks.providers.qiniu
 
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
@@ -6,9 +6,9 @@ import kotlinx.coroutines.withContext
 import okhttp3.Request
 import okio.buffer
 import okio.sink
-import org.aquamarine5.brainspark.stackbricks.v2.StackbricksPackageFile
-import org.aquamarine5.brainspark.stackbricks.v2.StackbricksPackageProvider
-import org.aquamarine5.brainspark.stackbricks.v2.StackbricksVersionData
+import org.aquamarine5.brainspark.stackbricks.StackbricksPackageFile
+import org.aquamarine5.brainspark.stackbricks.StackbricksPackageProvider
+import org.aquamarine5.brainspark.stackbricks.StackbricksVersionData
 import java.io.File
 
 class QiniuPackageProvider(

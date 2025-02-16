@@ -1,12 +1,10 @@
-package org.aquamarine5.brainspark.stackbricks.v2.providers.qiniu
+package org.aquamarine5.brainspark.stackbricks.providers.qiniu
 
 import com.alibaba.fastjson2.JSONObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Request
-import org.aquamarine5.brainspark.stackbricks.v2.StackbricksMessageProvider
-import org.aquamarine5.brainspark.stackbricks.v2.StackbricksVersionData
-import java.net.URI
+import org.aquamarine5.brainspark.stackbricks.StackbricksMessageProvider
 import java.net.URL
 import java.util.Date
 

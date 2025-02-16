@@ -1,10 +1,10 @@
-package org.aquamarine5.brainspark.stackbricks.v2
+package org.aquamarine5.brainspark.stackbricks
 
 import android.content.Context
 
 interface StackbricksPackageProvider {
     suspend fun downloadPackage(
         context: Context,
-        versionData:StackbricksVersionData
-    ):StackbricksPackageFile
+        versionData: StackbricksVersionData
+    ): StackbricksPackageFile
 }

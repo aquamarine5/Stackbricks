@@ -1,4 +1,4 @@
-package org.aquamarine5.brainspark.stackbricks.v2.providers.qiniu
+package org.aquamarine5.brainspark.stackbricks.providers.qiniu
 
 import okhttp3.OkHttpClient
 

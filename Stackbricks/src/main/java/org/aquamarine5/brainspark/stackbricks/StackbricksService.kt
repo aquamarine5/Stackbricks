@@ -1,90 +1,48 @@
 package org.aquamarine5.brainspark.stackbricks
 
 import android.content.Context
-import android.icu.util.VersionInfo
-import okhttp3.OkHttpClient
+import androidx.core.content.pm.PackageInfoCompat
 
-class StackbricksService(val context: Context, val msgPvderId: String, val msgPvderData: String) {
+open class StackbricksService(
+    private val context: Context,
+    private val messageProvider: StackbricksMessageProvider,
+    private val packageProvider: StackbricksPackageProvider
+) {
     companion object {
-        val okHttpClient = OkHttpClient()
+        const val TAG = "StackbricksService"
     }
 
-    var mUpdatePackage: ExceptionalResult<UpdatePackage> = ExceptionalResult.fail(
-        NullPointerException("Should not use this value"),
-        "Should not use this value"
-    )
-    var mUpdateMessage: ExceptionalResult<UpdateMessage> = ExceptionalResult.fail(
-        NullPointerException("Should not use this value"),
-        "Should not use this value"
-    )
-
-    fun getMsgPvder(): IMsgPvder? {
-        return MsgPvderManager.parseFromId(msgPvderId)
-    }
-
-    fun getPkgPvder(pkgPvderId: String): IPkgPvder? {
-        return PkgPvderManager.parseFromId(pkgPvderId)
-    }
-
-    suspend fun checkUpdate(): ExceptionalResult<Boolean> {
-        val currentVersion = VersionInfo.getInstance(
+    open suspend fun isNeedUpdate(): StackbricksVersionData? {
+        val currentVersion = PackageInfoCompat.getLongVersionCode(
             context.packageManager.getPackageInfo(
                 context.packageName,
                 0
-            ).versionName
+            )
         )
-        val updateMessage = getUpdateMessage()
-        return if (updateMessage.isSuccess) {
-            ExceptionalResult.success(updateMessage.result!!.version > currentVersion)
-        } else {
-            ExceptionalResult.fail(updateMessage)
-        }
+        val updateMessage = messageProvider.getLatestVersionData()
+        return if (currentVersion < updateMessage.versionCode) updateMessage else null
     }
 
-    suspend fun updateWhenAvailable(): ExceptionalResult<StackbricksStatus> {
-        val checkResult = checkUpdate()
-        return if (checkResult.isSuccess) {
-            if (checkResult.result!!) {
-                val updatePackage = getUpdatePackage()
-                if (updatePackage.isSuccess) {
-                    updatePackage.result!!.installApk(context)
-                    ExceptionalResult.success(StackbricksStatus.STATUS_NEWEST)
-                } else {
-                    ExceptionalResult.fail(updatePackage)
-                }
-            } else ExceptionalResult.success(StackbricksStatus.STATUS_NEWEST)
-        } else {
-            ExceptionalResult.fail(checkResult)
-        }
-
+    open suspend fun downloadPackage(versionData: StackbricksVersionData): StackbricksPackageFile {
+        return packageProvider.downloadPackage(context, versionData)
     }
 
-    suspend fun getUpdatePackage(): ExceptionalResult<UpdatePackage> {
-        return if (mUpdatePackage.isSuccess)
-            mUpdatePackage
-        else {
-            val updateMessage = getUpdateMessage()
-            if (updateMessage.isSuccess) {
-
-                mUpdatePackage = getPkgPvder(updateMessage.result!!.pkgPvderId)!!
-                    .downloadPackage(
-                        context,
-                        updateMessage.result,
-                        updateMessage.result.pkgPvderData
-                    )
-                mUpdatePackage
-            } else {
-                ExceptionalResult.fail(updateMessage)
-            }
-        }
+    open suspend fun getLatestPackageInfo(): StackbricksVersionData {
+        return messageProvider.getLatestVersionData()
     }
 
-    suspend fun getUpdateMessage(): ExceptionalResult<UpdateMessage> {
-        return if (mUpdateMessage.isSuccess)
-            mUpdateMessage
-        else {
-            mUpdateMessage = getMsgPvder()!!.getUpdateMessage(msgPvderData)
-            mUpdateMessage
+    fun installPackage(packageFile: StackbricksPackageFile) {
+        packageFile.installPackage(context)
+    }
+
+    open suspend fun downloadAndInstallPackage(versionData: StackbricksVersionData) {
+        val packageFile = downloadPackage(versionData)
+        installPackage(packageFile)
+    }
+
+    open suspend fun updateIfAvailable() {
+        isNeedUpdate()?.let {
+            downloadAndInstallPackage(it)
         }
     }
 }

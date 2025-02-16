@@ -1,8 +1,7 @@
-package org.aquamarine5.brainspark.stackbricks.v2.providers.qiniu
+package org.aquamarine5.brainspark.stackbricks.providers.qiniu
 
 import com.alibaba.fastjson2.JSONObject
-import org.aquamarine5.brainspark.stackbricks.v2.StackbricksVersionData
-import java.net.URL
+import org.aquamarine5.brainspark.stackbricks.StackbricksVersionData
 import java.util.Date
 
 class QiniuVersionData(

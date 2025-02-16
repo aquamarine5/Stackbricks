@@ -4,15 +4,13 @@ plugins {
     id 'maven-publish'
     alias(libs.plugins.kotlin.compose)
 }
-stackbricksConfig {
 
-}
 publishing {
     publications {
         release(MavenPublication) {
             groupId = 'org.aquamarine5.brainspark'
             artifactId = 'stackbricks'
-            version = '2.0.0-alpha3'
+            version = '2.0.0-beta1'
             afterEvaluate {
                 from components.release
             }
@@ -39,7 +37,7 @@ android {
     compileSdk 35
 
     defaultConfig {
-        minSdk 24
+        minSdk 26
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
