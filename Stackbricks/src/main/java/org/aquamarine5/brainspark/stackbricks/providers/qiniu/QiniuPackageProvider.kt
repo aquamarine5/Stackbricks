@@ -1,11 +1,14 @@
 package org.aquamarine5.brainspark.stackbricks.providers.qiniu
 
 import android.content.Context
+import android.util.Log
+import androidx.compose.runtime.MutableState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Request
 import okio.buffer
 import okio.sink
+import org.aquamarine5.brainspark.stackbricks.ProgressedResponseBody
 import org.aquamarine5.brainspark.stackbricks.StackbricksPackageFile
 import org.aquamarine5.brainspark.stackbricks.StackbricksPackageProvider
 import org.aquamarine5.brainspark.stackbricks.StackbricksVersionData
@@ -20,13 +23,14 @@ class QiniuPackageProvider(
 
     override suspend fun downloadPackage(
         context: Context,
-        versionData: StackbricksVersionData
+        versionData: StackbricksVersionData,
+        downloadProgress: MutableState<Float>?
     ): StackbricksPackageFile {
         val req = Request.Builder()
             .url("http://${configuration.host}/${versionData.downloadFilename}")
             .get()
         configuration.referer?.let {
-            req.addHeader("Referer",it)
+            req.addHeader("Referer", it)
         }
         return withContext(Dispatchers.IO) {
             configuration.okHttpClient.newCall(req.build()).execute().use { response ->
@@ -34,13 +38,19 @@ class QiniuPackageProvider(
                     throw IllegalStateException("Unexpected response code: ${response.code}")
                 }
                 val body = response.body ?: throw IllegalStateException("Empty response body")
+                val progressedBody =
+                    ProgressedResponseBody(body) { bytesRead, contentLength, isDone ->
+                        downloadProgress?.value =
+                            if (isDone) 1f else (bytesRead / contentLength.toDouble()).toFloat()
+                        Log.i(TAG,"currentProgress: $downloadProgress")
+                    }
                 val file = File.createTempFile(
                     "stackbricks_qiniu_${versionData.versionCode}",
                     ".apk",
                     context.cacheDir
                 )
                 file.sink().buffer().use { sink ->
-                    sink.writeAll(body.source())
+                    sink.writeAll(progressedBody.source())
                 }
                 return@withContext StackbricksPackageFile(file)
             }

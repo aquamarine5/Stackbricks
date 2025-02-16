@@ -1,6 +1,7 @@
 package org.aquamarine5.brainspark.stackbricks
 
 import android.content.Context
+import android.util.Log
 import androidx.core.content.pm.PackageInfoCompat
 
 open class StackbricksService(
@@ -20,6 +21,7 @@ open class StackbricksService(
             )
         )
         val updateMessage = messageProvider.getLatestVersionData()
+        Log.i(TAG,"currentVersion: $currentVersion, serverVersion: ${updateMessage.versionCode}")
         return if (currentVersion < updateMessage.versionCode) updateMessage else null
     }
 

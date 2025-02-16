@@ -22,17 +22,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.ParagraphStyle
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
@@ -133,20 +142,19 @@ fun StackbricksComponent(
         },
         colors = ButtonDefaults.buttonColors(buttonColor),
         modifier = Modifier
-            .padding(10.dp)
             .fillMaxWidth()
             .then(modifier),
         shape = RoundedCornerShape(18.dp)
     ) {
         Column(
             modifier = Modifier
-                .padding(7.dp)
+                .padding(7.dp,7.dp,7.dp,4.dp)
                 .fillMaxWidth()
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Start,
-                modifier = Modifier.padding(0.dp, 0.dp, 0.dp, 20.dp)
+                modifier = Modifier.padding(0.dp, 0.dp, 0.dp, 4.dp)
             ) {
                 Icon(
                     painter = painterResource(R.drawable.stackbricks_logo),
@@ -168,12 +176,28 @@ fun StackbricksComponent(
             }
             downloadProgress?.let {
                 LinearProgressIndicator(
+                    progress = { it },
                     modifier = Modifier.fillMaxWidth(),
                     gapSize = (-1).dp
                 )
             }
             Text(
-                text = "更新服务由 Stackbricks 提供。"
+                text = buildAnnotatedString {
+                    append("更新服务由 ")
+                    withStyle(
+                        SpanStyle(
+                            fontFamily = FontFamily(
+                                Font(R.font.gilroy)
+                            ),
+                            fontSize = TextUnit(13F, TextUnitType.Sp),
+                        )
+                    ) {
+                        append("Stackbricks")
+                    }
+                    append(" 提供。")
+                },
+                fontSize = TextUnit(12F, TextUnitType.Sp),
+
             )
         }
     }
@@ -194,7 +218,7 @@ fun rememberStackbricksStatus(
 
 @Preview
 @Composable
-fun preview() {
+private fun Preview() {
     val qiniuConfiguration = QiniuConfiguration("http://localhost:8080", "/config.json")
     StackbricksComponent(
         StackbricksStateService(
