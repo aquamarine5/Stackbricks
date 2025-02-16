@@ -1,5 +1,6 @@
 package org.aquamarine5.brainspark.stackbricks
 
+import java.time.Instant
 import java.util.Date
 
 interface StackbricksVersionData {
@@ -7,5 +8,5 @@ interface StackbricksVersionData {
     val versionCode: Int
     val versionName: String
     val downloadFilename: String
-    val releaseDate: Date
+    val releaseDate: Instant
 }

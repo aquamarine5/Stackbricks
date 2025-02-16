@@ -9,12 +9,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
@@ -64,9 +67,8 @@ fun StackbricksComponent(
         StackbricksStatus.STATUS_DOWNLOADING to stringResource(R.string.stackbricks_tips_downloading),
         StackbricksStatus.STATUS_CHECKING to stringResource(R.string.stackbricks_tips_checking)
     )
-    var mState by service.state
-    var status = mState.status
-    var downloadProgress = mState.downloadingProgress
+    var status by service.state.status
+    var downloadProgress by service.state.downloadingProgress
     var errorTips by remember { mutableStateOf("") }
     val buttonColorValue by remember { derivedStateOf { buttonColorMatchMap[status]!! } }
     val buttonColor by animateColorAsState(buttonColorValue)
@@ -123,10 +125,10 @@ fun StackbricksComponent(
                 }
             } catch (ioE: IOException) {
                 status = StackbricksStatus.STATUS_NETWORK_ERROR
-                errorTips= "网络错误：${ioE.localizedMessage}"
+                errorTips = "网络错误：${ioE.localizedMessage}"
             } catch (e: Exception) {
                 status = StackbricksStatus.STATUS_INTERNAL_ERROR
-                errorTips="内部错误：${e.localizedMessage}"
+                errorTips = "内部错误：${e.localizedMessage}"
             }
         },
         colors = ButtonDefaults.buttonColors(buttonColor),
@@ -181,13 +183,11 @@ fun StackbricksComponent(
 fun rememberStackbricksStatus(
     status: StackbricksStatus = StackbricksStatus.STATUS_START,
     downloadProgress: Float? = null
-): MutableState<StackbricksState> {
+): StackbricksState {
     return remember(status, downloadProgress) {
-        mutableStateOf(
-            StackbricksState(
-                status = status,
-                downloadingProgress = downloadProgress
-            )
+        StackbricksState(
+            status = mutableStateOf(status),
+            downloadingProgress = mutableStateOf(downloadProgress)
         )
     }
 }

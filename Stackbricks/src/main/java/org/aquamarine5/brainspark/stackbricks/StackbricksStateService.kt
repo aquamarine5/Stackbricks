@@ -11,13 +11,13 @@ class StackbricksStateService(
     val context: Context,
     messageProvider: StackbricksMessageProvider,
     packageProvider: StackbricksPackageProvider,
-    val state: MutableState<StackbricksState>
+    val state: StackbricksState
 ) : StackbricksService(context, messageProvider, packageProvider) {
     companion object {
         const val VERSION_DATA_AVAILABLE_DURATION = 5L
         const val TAG = "StackbricksStateService"
     }
-    private val mState by state
+    private val mState = state
     suspend fun isNewerVersion(): Boolean {
         val versionData = isNeedUpdate()
         if (versionData == null) {
