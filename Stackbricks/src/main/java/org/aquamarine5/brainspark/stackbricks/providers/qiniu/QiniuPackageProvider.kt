@@ -24,9 +24,12 @@ class QiniuPackageProvider(
     ): StackbricksPackageFile {
         val req = Request.Builder()
             .url("http://${configuration.host}/${versionData.downloadFilename}")
-            .build()
+            .get()
+        configuration.referer?.let {
+            req.addHeader("Referer",it)
+        }
         return withContext(Dispatchers.IO) {
-            configuration.okHttpClient.newCall(req).execute().use { response ->
+            configuration.okHttpClient.newCall(req.build()).execute().use { response ->
                 if (!response.isSuccessful) {
                     throw IllegalStateException("Unexpected response code: ${response.code}")
                 }

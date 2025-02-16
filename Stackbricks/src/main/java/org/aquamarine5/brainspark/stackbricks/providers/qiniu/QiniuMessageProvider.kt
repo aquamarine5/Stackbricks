@@ -26,10 +26,10 @@ class QiniuMessageProvider(
         return withContext(Dispatchers.IO) {
             configuration.okHttpClient.newCall(req.build()).execute().use { response ->
                 if (!response.isSuccessful) {
-                    throw IllegalStateException("Unexpected response code: ${response.code}")
+                    throw IllegalStateException("Unexpected response code: ${response.request.url},${response.code}")
                 }
                 val body = response.body ?: throw IllegalStateException("Empty response body")
-                val rawJson = JSONObject.parseObject(body.string())
+                val rawJson = JSONObject.parseObject(body.string()).getJSONObject("latest")
                 val versionCode = rawJson.getIntValue("versionCode")
                 val versionName = rawJson.getString("versionName")
                 val downloadUrl = rawJson.getString("downloadUrl")
