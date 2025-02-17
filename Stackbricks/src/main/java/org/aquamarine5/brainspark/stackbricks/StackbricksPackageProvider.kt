@@ -1,6 +1,7 @@
 package org.aquamarine5.brainspark.stackbricks
 
 import android.content.Context
+import androidx.compose.runtime.MutableFloatState
 import androidx.compose.runtime.MutableState
 
 interface StackbricksPackageProvider {

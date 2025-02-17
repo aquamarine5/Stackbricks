@@ -8,7 +8,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 
 class StackbricksStateService(
-    val context: Context,
+    private val context: Context,
     messageProvider: StackbricksMessageProvider,
     packageProvider: StackbricksPackageProvider,
     val state: StackbricksState
@@ -17,14 +17,16 @@ class StackbricksStateService(
         const val VERSION_DATA_AVAILABLE_DURATION = 5L
         const val TAG = "StackbricksStateService"
     }
+
     private val mState = state
     suspend fun isNewerVersion(): Boolean {
         val versionData = isNeedUpdate()
-        if (versionData == null) {
-            return false
+
+        return if (versionData == null) {
+            false
         } else {
             mState.versionData = versionData
-            return true
+            true
         }
     }
 
@@ -53,7 +55,8 @@ class StackbricksStateService(
     fun installPackage(): Boolean {
         return mState.packageFile?.let {
             it.installPackage(context)
-            return true } ?: false
+            return true
+        } ?: false
     }
 
     override suspend fun getLatestPackageInfo(): StackbricksVersionData {

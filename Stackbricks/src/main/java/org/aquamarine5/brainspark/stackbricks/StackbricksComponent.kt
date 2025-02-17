@@ -62,6 +62,7 @@ fun StackbricksComponent(
         StackbricksStatus.STATUS_CHECKING to Color(81, 196, 211),
         StackbricksStatus.STATUS_CLICK_INSTALL to Color(236, 138, 164),
         StackbricksStatus.STATUS_INTERNAL_ERROR to Color(238, 72, 102),
+        StackbricksStatus.STATUS_NETWORK_ERROR to Color(238, 72, 102),
         StackbricksStatus.STATUS_DOWNLOADING to Color(248, 223, 112),
         StackbricksStatus.STATUS_NEWER_VERSION to Color(248, 223, 112),
         StackbricksStatus.STATUS_NEWEST to Color(69, 210, 154)
