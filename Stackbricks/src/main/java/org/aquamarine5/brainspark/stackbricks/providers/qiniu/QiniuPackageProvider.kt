@@ -24,7 +24,7 @@ class QiniuPackageProvider(
     override suspend fun downloadPackage(
         context: Context,
         versionData: StackbricksVersionData,
-        downloadProgress: MutableState<Float>?
+        downloadProgress: MutableState<Float?>
     ): StackbricksPackageFile {
         val req = Request.Builder()
             .url("http://${configuration.host}/${versionData.downloadFilename}")
@@ -40,7 +40,7 @@ class QiniuPackageProvider(
                 val body = response.body ?: throw IllegalStateException("Empty response body")
                 val progressedBody =
                     ProgressedResponseBody(body) { bytesRead, contentLength, isDone ->
-                        downloadProgress?.value =
+                        downloadProgress.value =
                             if (isDone) 1f else (bytesRead / contentLength.toDouble()).toFloat()
                         Log.i(TAG,"currentProgress: $downloadProgress")
                     }

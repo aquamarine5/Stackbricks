@@ -48,7 +48,7 @@ plugins {
 > [!WARNING]
 > `$latest_sgp_version`和`$latest_version`并不同步。
 
-> [!TIPS]
+> [!TIP]
 > Github Packages源可以设置为`uri("https://maven.pkg.github.com/aquamarine5/*")`从而引入所有和Stackbricks相关的库。
 
 ## 使用
