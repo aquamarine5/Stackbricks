@@ -10,7 +10,7 @@ import java.time.temporal.ChronoUnit
 class StackbricksStateService(
     private val context: Context,
     messageProvider: StackbricksMessageProvider,
-    packageProvider: StackbricksPackageProvider,
+    private val packageProvider: StackbricksPackageProvider,
     val state: StackbricksState
 ) : StackbricksService(context, messageProvider, packageProvider) {
     companion object {
@@ -50,6 +50,12 @@ class StackbricksStateService(
 
     suspend fun downloadPackage(): StackbricksPackageFile {
         return downloadPackage(getVersionData())
+    }
+
+    suspend fun downloadPackageWithProgress(versionData: StackbricksVersionData):StackbricksPackageFile{
+        val packageFile = packageProvider.downloadPackage(context,versionData,state.downloadingProgress)
+        mState.packageFile = packageFile
+        return packageFile
     }
 
     fun installPackage(): Boolean {

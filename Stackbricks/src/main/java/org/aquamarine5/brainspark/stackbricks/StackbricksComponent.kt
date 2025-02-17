@@ -114,12 +114,18 @@ fun StackbricksComponent(
                     StackbricksStatus.STATUS_NEWER_VERSION -> {
                         coroutineScope.launch {
                             downloadProgress = 0f
-                            service.downloadPackage()
+                            service.downloadPackageWithProgress(service.getVersionData())
                         }
                     }
 
                     StackbricksStatus.STATUS_CLICK_INSTALL -> {
-                        service.installPackage()
+                        val isSuccess = service.installPackage()
+                        if (isSuccess) {
+                            status = StackbricksStatus.STATUS_NEWEST
+                        } else {
+                            status = StackbricksStatus.STATUS_INTERNAL_ERROR
+                            errorTips = "安装失败"
+                        }
                     }
 
                     StackbricksStatus.STATUS_INTERNAL_ERROR,
@@ -149,7 +155,7 @@ fun StackbricksComponent(
     ) {
         Column(
             modifier = Modifier
-                .padding(7.dp,7.dp,7.dp,4.dp)
+                .padding(7.dp, 7.dp, 7.dp, 4.dp)
                 .fillMaxWidth()
         ) {
             Row(
@@ -179,8 +185,12 @@ fun StackbricksComponent(
                 LinearProgressIndicator(
                     progress = { it },
                     modifier = Modifier.fillMaxWidth(),
-                    gapSize = (-1).dp
+                    gapSize = (-1).dp,
+                    drawStopIndicator = {}
                 )
+                if (it == 1F) {
+                    status = StackbricksStatus.STATUS_CLICK_INSTALL
+                }
             }
             Text(
                 text = buildAnnotatedString {
@@ -199,7 +209,7 @@ fun StackbricksComponent(
                 },
                 fontSize = TextUnit(12F, TextUnitType.Sp),
 
-            )
+                )
         }
     }
 }
