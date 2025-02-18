@@ -208,8 +208,8 @@ fun StackbricksComponent(
                     append(" 提供。")
                 },
                 fontSize = TextUnit(12F, TextUnitType.Sp),
-
-                )
+                modifier = Modifier.padding(0.dp, 4.dp, 0.dp, 0.dp)
+            )
         }
     }
 }
