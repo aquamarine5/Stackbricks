@@ -12,8 +12,9 @@ open class StackbricksPackageFile(
         Intent(Intent.ACTION_VIEW).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            setDataAndType(
-                FileProvider.getUriForFile(context, "${context.packageName}.file_provider", file),
+            setDataAndTypeAndNormalize(
+                FileProvider.getUriForFile(context,
+                    "org.aquamarine5.brainspark.stackbricks.file_provider", file),
                 "application/vnd.android.package-archive"
             )
             context.startActivity(this)
