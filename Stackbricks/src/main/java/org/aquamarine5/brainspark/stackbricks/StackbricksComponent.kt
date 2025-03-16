@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -26,6 +27,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,7 +57,8 @@ import java.io.IOException
 @Composable
 fun StackbricksComponent(
     service: StackbricksStateService,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    checkUpdateOnLaunch:Boolean=true
 ) {
     val buttonColorMatchMap = mapOf(
         StackbricksStatus.STATUS_START to Color(81, 196, 211),
@@ -205,11 +208,33 @@ fun StackbricksComponent(
                     ) {
                         append("Stackbricks")
                     }
-                    append(" 提供。")
+                    append(" 提供。\n")
+                    append("当前程序版本：")
+                    withStyle(
+                        SpanStyle(
+                            fontFamily = FontFamily(
+                                Font(R.font.gilroy)
+                            ),
+                            fontSize = TextUnit(13F, TextUnitType.Sp),
+                        )
+                    ){
+                        append("${service.getCurrentVersionName()}(${service.getCurrentVersion()})")
+                    }
                 },
                 fontSize = TextUnit(12F, TextUnitType.Sp),
                 modifier = Modifier.padding(0.dp, 4.dp, 0.dp, 0.dp)
             )
+        }
+    }
+    LaunchedEffect(Unit) {
+        if(checkUpdateOnLaunch){
+            coroutineScope.launch {
+                status = StackbricksStatus.STATUS_CHECKING
+                status =
+                    if (service.isNewerVersion())
+                        StackbricksStatus.STATUS_NEWER_VERSION
+                    else StackbricksStatus.STATUS_NEWEST
+            }
         }
     }
 }

@@ -13,13 +13,24 @@ open class StackbricksService(
         const val TAG = "StackbricksService"
     }
 
-    open suspend fun isNeedUpdate(): StackbricksVersionData? {
-        val currentVersion = PackageInfoCompat.getLongVersionCode(
+    open fun getCurrentVersion(): Long {
+        return PackageInfoCompat.getLongVersionCode(
             context.packageManager.getPackageInfo(
                 context.packageName,
                 0
             )
         )
+    }
+
+    open fun getCurrentVersionName(): String? {
+        return context.packageManager.getPackageInfo(
+            context.packageName,
+            0
+        ).versionName
+    }
+
+    open suspend fun isNeedUpdate(): StackbricksVersionData? {
+        val currentVersion = getCurrentVersion()
         val updateMessage = messageProvider.getLatestVersionData()
         Log.i(TAG,"currentVersion: $currentVersion, serverVersion: ${updateMessage.versionCode}")
         return if (currentVersion < updateMessage.versionCode) updateMessage else null

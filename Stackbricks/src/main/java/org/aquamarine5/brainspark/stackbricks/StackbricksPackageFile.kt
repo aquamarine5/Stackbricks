@@ -14,7 +14,7 @@ open class StackbricksPackageFile(
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             val uri=FileProvider.getUriForFile(context,
-                "${context.packageName}.stackbricks.file_provider", file)
+                "${context.applicationContext.packageName}.stackbricks.file_provider", file)
             Log.i("StackbricksPackageFile","uri: $uri")
             setDataAndTypeAndNormalize(
                 uri,
