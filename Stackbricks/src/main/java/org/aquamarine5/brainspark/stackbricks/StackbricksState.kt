@@ -25,34 +25,38 @@ class StackbricksState(
     ) : StackbricksVersionData, Serializable
 
     companion object {
-        val Saver: Saver<StackbricksState, *> = listSaver(
-            save = {
-                listOf(
-                    it.status.value,
-                    it.localVersionData == null,
-                    it.packageFile?.file?.absolutePath,
-                    it.checkUpdateTime,
-                    it.downloadingProgress.value,
-                    it.localVersionData?.versionCode,
-                    it.localVersionData?.versionName,
-                    it.localVersionData?.downloadFilename,
-                    it.localVersionData?.releaseDate,
-                    it.localVersionData?.packageName,
-                )
+        val Saver: Saver<MutableState<StackbricksState>, *> = listSaver(
+            save = { saver ->
+                saver.value.let {
+                    listOf(
+                        it.status.value,
+                        it.localVersionData == null,
+                        it.packageFile?.file?.absolutePath,
+                        it.checkUpdateTime,
+                        it.downloadingProgress.value,
+                        it.localVersionData?.versionCode,
+                        it.localVersionData?.versionName,
+                        it.localVersionData?.downloadFilename,
+                        it.localVersionData?.releaseDate,
+                        it.localVersionData?.packageName,
+                    )
+                }
             },
             restore = {
-                StackbricksState(
-                    status = mutableStateOf(it[0] as StackbricksStatus),
-                    localVersionData = if(it[1] as Boolean) null else BuiltinStackbricksVersionData(
-                        it[5] as Int,
-                        it[6] as String,
-                        it[7] as String,
-                        it[8] as Instant,
-                        it[9] as String
-                    ),
-                    packageFile = (it[2] as String?)?.let { StackbricksPackageFile(File(it)) },
-                    checkUpdateTime = it[3] as Instant?,
-                    downloadingProgress = mutableStateOf(it[4] as Float?)
+                mutableStateOf(
+                    StackbricksState(
+                        status = mutableStateOf(it[0] as StackbricksStatus),
+                        localVersionData = if (it[1] as Boolean) null else BuiltinStackbricksVersionData(
+                            it[5] as Int,
+                            it[6] as String,
+                            it[7] as String,
+                            it[8] as Instant,
+                            it[9] as String
+                        ),
+                        packageFile = (it[2] as String?)?.let { StackbricksPackageFile(File(it)) },
+                        checkUpdateTime = it[3] as Instant?,
+                        downloadingProgress = mutableStateOf(it[4] as Float?)
+                    )
                 )
             }
         )

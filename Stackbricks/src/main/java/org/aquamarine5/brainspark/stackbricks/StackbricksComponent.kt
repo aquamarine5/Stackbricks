@@ -242,12 +242,12 @@ fun StackbricksComponent(
 fun rememberStackbricksStatus(
     status: StackbricksStatus = StackbricksStatus.STATUS_START,
     downloadProgress: Float? = null
-): StackbricksState {
+): MutableState<StackbricksState> {
     return rememberSaveable(status, downloadProgress, saver = StackbricksState.Saver) {
-        StackbricksState(
+        mutableStateOf(StackbricksState(
             status = mutableStateOf(status),
             downloadingProgress = mutableStateOf(downloadProgress)
-        )
+        ))
     }
 }
 
@@ -259,7 +259,7 @@ private fun Preview() {
         StackbricksStateService(
             LocalContext.current, QiniuMessageProvider(qiniuConfiguration),
             packageProvider = QiniuPackageProvider(qiniuConfiguration),
-            state = rememberStackbricksStatus()
+            state = rememberStackbricksStatus().value
         )
     )
 }
