@@ -227,7 +227,7 @@ fun StackbricksComponent(
         }
     }
     LaunchedEffect(Unit) {
-        if (checkUpdateOnLaunch) {
+        if (checkUpdateOnLaunch && service.state.status.value == StackbricksStatus.STATUS_START) {
             status = StackbricksStatus.STATUS_CHECKING
             status =
                 if (service.isNewerVersion())
