@@ -58,7 +58,7 @@ import java.io.IOException
 fun StackbricksComponent(
     service: StackbricksStateService,
     modifier: Modifier = Modifier,
-    checkUpdateOnLaunch:Boolean=true
+    checkUpdateOnLaunch: Boolean = true
 ) {
     val buttonColorMatchMap = mapOf(
         StackbricksStatus.STATUS_START to Color(81, 196, 211),
@@ -217,7 +217,7 @@ fun StackbricksComponent(
                             ),
                             fontSize = TextUnit(13F, TextUnitType.Sp),
                         )
-                    ){
+                    ) {
                         append("${service.getCurrentVersionName()}(${service.getCurrentVersion()})")
                     }
                 },
@@ -227,15 +227,14 @@ fun StackbricksComponent(
         }
     }
     LaunchedEffect(Unit) {
-        if(checkUpdateOnLaunch){
-            coroutineScope.launch {
-                status = StackbricksStatus.STATUS_CHECKING
-                status =
-                    if (service.isNewerVersion())
-                        StackbricksStatus.STATUS_NEWER_VERSION
-                    else StackbricksStatus.STATUS_NEWEST
-            }
+        if (checkUpdateOnLaunch) {
+            status = StackbricksStatus.STATUS_CHECKING
+            status =
+                if (service.isNewerVersion())
+                    StackbricksStatus.STATUS_NEWER_VERSION
+                else StackbricksStatus.STATUS_NEWEST
         }
+
     }
 }
 
@@ -244,7 +243,7 @@ fun rememberStackbricksStatus(
     status: StackbricksStatus = StackbricksStatus.STATUS_START,
     downloadProgress: Float? = null
 ): StackbricksState {
-    return remember(status, downloadProgress) {
+    return rememberSaveable(status, downloadProgress) {
         StackbricksState(
             status = mutableStateOf(status),
             downloadingProgress = mutableStateOf(downloadProgress)
