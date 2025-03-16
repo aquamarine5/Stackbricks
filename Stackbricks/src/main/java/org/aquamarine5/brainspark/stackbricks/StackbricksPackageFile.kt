@@ -7,7 +7,7 @@ import androidx.core.content.FileProvider
 import java.io.File
 
 open class StackbricksPackageFile(
-    private val file: File
+    val file: File
 ) {
     open fun installPackage(context: Context) {
         context.startActivity(Intent(Intent.ACTION_VIEW).apply {

@@ -243,7 +243,7 @@ fun rememberStackbricksStatus(
     status: StackbricksStatus = StackbricksStatus.STATUS_START,
     downloadProgress: Float? = null
 ): StackbricksState {
-    return rememberSaveable(status, downloadProgress) {
+    return rememberSaveable(status, downloadProgress, saver = StackbricksState.Saver) {
         StackbricksState(
             status = mutableStateOf(status),
             downloadingProgress = mutableStateOf(downloadProgress)
