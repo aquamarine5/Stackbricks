@@ -7,8 +7,24 @@ import androidx.core.content.pm.PackageInfoCompat
 open class StackbricksService(
     private val context: Context,
     private val messageProvider: StackbricksMessageProvider,
-    private val packageProvider: StackbricksPackageProvider
+    private val packageProvider: StackbricksPackageProvider,
+    val state: StackbricksState
 ) {
+
+    private var _manifest: StackbricksManifest? = null
+
+    private var _package: StackbricksPackageFile? = null
+
+    private suspend fun getManifest(): StackbricksManifest {
+        return if (_manifest == null) {
+            messageProvider.getManifest().apply {
+                _manifest = this
+            }
+        } else {
+            _manifest!!
+        }
+    }
+
     companion object {
         const val TAG = "StackbricksService"
     }
@@ -31,13 +47,30 @@ open class StackbricksService(
 
     open suspend fun isNeedUpdate(): StackbricksVersionData? {
         val currentVersion = getCurrentVersion()
-        val updateMessage = messageProvider.getLatestVersionData()
-        Log.i(TAG,"currentVersion: $currentVersion, serverVersion: ${updateMessage.versionCode}")
+        val updateMessage = getManifest().latestStable
         return if (currentVersion < updateMessage.versionCode) updateMessage else null
     }
 
-    open suspend fun downloadPackage(versionData: StackbricksVersionData): StackbricksPackageFile {
-        return packageProvider.downloadPackage(context, versionData)
+    open suspend fun isBetaVersionAvailable(): StackbricksVersionData? {
+        val latestTest = getManifest().latestTest
+        return if (getCurrentVersion() < latestTest.versionCode) latestTest else null
+    }
+
+    open suspend fun downloadPackage(
+        isStable: Boolean = true,
+        withProgress: Boolean = true
+    ): StackbricksPackageFile {
+        return packageProvider.downloadPackage(
+            context,
+            if (isStable) getManifest().latestStable else getManifest().latestTest,
+            state.downloadingProgress
+        ).apply {
+            _package = this
+        }
+    }
+
+    open suspend fun isNewerVersion(): Boolean {
+        return isNeedUpdate() != null
     }
 
     open suspend fun getLatestPackageInfo(): StackbricksVersionData {
@@ -49,7 +82,7 @@ open class StackbricksService(
     }
 
     open suspend fun downloadAndInstallPackage(versionData: StackbricksVersionData) {
-        val packageFile = downloadPackage(versionData)
+        val packageFile = downloadPackage()
         installPackage(packageFile)
     }
 

@@ -4,6 +4,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -56,9 +59,10 @@ import java.io.IOException
 
 @Composable
 fun StackbricksComponent(
-    service: StackbricksStateService,
+    service: StackbricksService,
     modifier: Modifier = Modifier,
-    checkUpdateOnLaunch: Boolean = true
+    checkUpdateOnLaunch: Boolean = true,
+    trigger: StackbricksEventTrigger?=null
 ) {
     val buttonColorMatchMap = mapOf(
         StackbricksStatus.STATUS_START to Color(81, 196, 211),
@@ -101,11 +105,16 @@ fun StackbricksComponent(
                     StackbricksStatus.STATUS_NEWEST,
                     StackbricksStatus.STATUS_START -> {
                         coroutineScope.launch {
-                            status = StackbricksStatus.STATUS_CHECKING
-                            status =
-                                if (service.isNewerVersion())
-                                    StackbricksStatus.STATUS_NEWER_VERSION
-                                else StackbricksStatus.STATUS_NEWEST
+                            runCatching {
+                                status = StackbricksStatus.STATUS_CHECKING
+                                status =
+                                    if (service.isNewerVersion())
+                                        StackbricksStatus.STATUS_NEWER_VERSION
+                                    else StackbricksStatus.STATUS_NEWEST
+                            }.onFailure {
+                                status = StackbricksStatus.STATUS_INTERNAL_ERROR
+                                errorTips = "内部错误：${it.localizedMessage}"
+                            }
                         }
                     }
 
@@ -116,8 +125,13 @@ fun StackbricksComponent(
 
                     StackbricksStatus.STATUS_NEWER_VERSION -> {
                         coroutineScope.launch {
-                            downloadProgress = 0f
-                            service.downloadPackageWithProgress(service.getVersionData())
+                            runCatching {
+                                downloadProgress = 0f
+                                service.downloadPackageWithProgress(service.getVersionData())
+                            }.onFailure {
+                                status = StackbricksStatus.STATUS_INTERNAL_ERROR
+                                errorTips = "下载失败：${it.localizedMessage}"
+                            }
                         }
                     }
 
@@ -134,11 +148,16 @@ fun StackbricksComponent(
                     StackbricksStatus.STATUS_INTERNAL_ERROR,
                     StackbricksStatus.STATUS_NETWORK_ERROR -> {
                         coroutineScope.launch {
-                            status = StackbricksStatus.STATUS_CHECKING
-                            status =
-                                if (service.isNewerVersion())
-                                    StackbricksStatus.STATUS_NEWER_VERSION
-                                else StackbricksStatus.STATUS_NEWEST
+                            runCatching {
+                                status = StackbricksStatus.STATUS_CHECKING
+                                status =
+                                    if (service.isNewerVersion())
+                                        StackbricksStatus.STATUS_NEWER_VERSION
+                                    else StackbricksStatus.STATUS_NEWEST
+                            }.onFailure {
+                                status = StackbricksStatus.STATUS_INTERNAL_ERROR
+                                errorTips = "内部错误：${it.localizedMessage}"
+                            }
                         }
                     }
                 }
@@ -153,6 +172,16 @@ fun StackbricksComponent(
         colors = ButtonDefaults.buttonColors(buttonColor),
         modifier = Modifier
             .fillMaxWidth()
+            .pointerInput(Unit){
+                detectTapGestures(
+                    onLongPress = {
+                        coroutineScope.launch {
+
+                            service.isBetaVersionAvailable()
+                        }
+                    }
+                )
+            }
             .then(modifier),
         shape = RoundedCornerShape(18.dp)
     ) {
@@ -242,12 +271,12 @@ fun StackbricksComponent(
 fun rememberStackbricksStatus(
     status: StackbricksStatus = StackbricksStatus.STATUS_START,
     downloadProgress: Float? = null
-): MutableState<StackbricksState> {
-    return rememberSaveable(status, downloadProgress, saver = StackbricksState.Saver) {
-        mutableStateOf(StackbricksState(
+): StackbricksState {
+    return remember(status, downloadProgress) {
+        StackbricksState(
             status = mutableStateOf(status),
             downloadingProgress = mutableStateOf(downloadProgress)
-        ))
+        )
     }
 }
 
@@ -256,10 +285,10 @@ fun rememberStackbricksStatus(
 private fun Preview() {
     val qiniuConfiguration = QiniuConfiguration("http://localhost:8080", "/config.json")
     StackbricksComponent(
-        StackbricksStateService(
+        StackbricksService(
             LocalContext.current, QiniuMessageProvider(qiniuConfiguration),
             packageProvider = QiniuPackageProvider(qiniuConfiguration),
-            state = rememberStackbricksStatus().value
+            state = rememberStackbricksStatus()
         )
     )
 }
