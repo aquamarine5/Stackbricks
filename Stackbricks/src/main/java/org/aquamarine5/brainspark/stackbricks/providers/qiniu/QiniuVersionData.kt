@@ -12,5 +12,6 @@ data class QiniuVersionData(
     override val releaseDate: Instant,
     override val packageName: String,
     override val changelog: String,
-    override val forceInstall: Boolean
+    override val forceInstall: Boolean,
+    override val isStable: Boolean
 ) : StackbricksVersionData

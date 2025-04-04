@@ -61,7 +61,8 @@ class QiniuMessageProvider(
                                 Instant.ofEpochMilli(getLong("releaseDate")),
                                 getString("packageName"),
                                 getString("changelog"),
-                                getBoolean("forceInstall")
+                                getBoolean("forceInstall"),
+                                isStable = true
                             )
                         },
                         baseJson.getJSONObject("latestTest").run {
@@ -72,7 +73,8 @@ class QiniuMessageProvider(
                                 Instant.ofEpochMilli(getLong("releaseDate")),
                                 getString("packageName"),
                                 getString("changelog"),
-                                getBoolean("forceInstall")
+                                getBoolean("forceInstall"),
+                                isStable = false
                             )
                         },
                         version

@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -45,7 +47,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInParent
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.ParagraphStyle
@@ -70,6 +75,7 @@ import org.aquamarine5.brainspark.stackbricks.providers.qiniu.QiniuMessageProvid
 import org.aquamarine5.brainspark.stackbricks.providers.qiniu.QiniuPackageProvider
 import java.io.IOException
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun StackbricksComponent(
     service: StackbricksService,
@@ -84,6 +90,7 @@ fun StackbricksComponent(
         StackbricksStatus.STATUS_INTERNAL_ERROR to Color(238, 72, 102),
         StackbricksStatus.STATUS_NETWORK_ERROR to Color(238, 72, 102),
         StackbricksStatus.STATUS_DOWNLOADING to Color(248, 223, 112),
+        StackbricksStatus.STATUS_BETA_AVAILABLE to Color(248, 223, 112),
         StackbricksStatus.STATUS_NEWER_VERSION to Color(248, 223, 112),
         StackbricksStatus.STATUS_NEWEST to Color(69, 210, 154)
     )
@@ -112,15 +119,20 @@ fun StackbricksComponent(
         }
     }
     val coroutineScope = rememberCoroutineScope()
-    Box{
-        AnimatedVisibility(service.internalVersionData?.isStable==false, enter = expandVertically(expandFrom = Alignment.Top), exit = shrinkVertically()){
+    var buttonSize by remember { mutableFloatStateOf(0f) }
+    Box {
+        AnimatedVisibility(
+            service.internalVersionData?.isStable == false,
+            enter = expandVertically(),
+            exit = shrinkVertically()
+        ) {
             Card(
                 shape = RoundedCornerShape(18.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = Color(0xFFF8D86A)
                 ), modifier = Modifier
                     .fillMaxWidth()
-                    .padding(6.dp, 0.dp)
+                    .height(with(LocalDensity.current) { buttonSize.toDp() } - 18.dp)
                     .zIndex(0f)
             ) {
                 Row(
@@ -137,7 +149,7 @@ fun StackbricksComponent(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        "随意分享此二维码给他人会增加你的学习通账号风险，他人可以通过二维码登录从而控制你的账号，但这个分享行为并不会暴露你的明文密码。",
+                        "你正在尝试使用测试版，可能会导致程序崩溃或数据丢失，请谨慎使用。",
                         color = Color.White,
                         fontSize = 13.sp,
                         lineHeight = 18.sp,
@@ -188,12 +200,15 @@ fun StackbricksComponent(
                         }
 
                         StackbricksStatus.STATUS_CLICK_INSTALL -> {
-                            val isSuccess = service.installPackage()
-                            if (isSuccess) {
-                                status = StackbricksStatus.STATUS_NEWEST
-                            } else {
-                                status = StackbricksStatus.STATUS_INTERNAL_ERROR
-                                errorTips = "安装失败"
+                            coroutineScope.launch {
+                                runCatching {
+                                    service.installPackage()
+                                }.onSuccess {
+                                    status = StackbricksStatus.STATUS_NEWEST
+                                }.onFailure {
+                                    status = StackbricksStatus.STATUS_INTERNAL_ERROR
+                                    errorTips = "安装失败"
+                                }
                             }
                         }
 
@@ -224,14 +239,13 @@ fun StackbricksComponent(
             colors = ButtonDefaults.buttonColors(buttonColor),
             modifier = Modifier
                 .fillMaxWidth()
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onLongPress = {
-                            coroutineScope.launch {
-                                service.isBetaVersionAvailable()
-                            }
-                        }
-                    )
+                .combinedClickable(onLongClick = {
+                    coroutineScope.launch {
+                        service.isBetaVersionAvailable()
+                    }
+                }){}
+                .onGloballyPositioned {
+                    buttonSize = it.boundsInParent().height
                 }
                 .zIndex(1f)
                 .then(modifier),
@@ -272,15 +286,22 @@ fun StackbricksComponent(
                     }
                 }
                 AnimatedVisibility(
-                    service.internalVersionData!=null, enter = expandVertically(), exit = shrinkHorizontally()
+                    service.internalVersionData != null,
+                    enter = expandVertically(),
+                    exit = shrinkHorizontally()
                 ) {
                     Text(buildAnnotatedString {
                         append("最新")
-                        if(status==StackbricksStatus.STATUS_BETA_AVAILABLE){
-                            withStyle(SpanStyle(textDecoration = TextDecoration.Underline, fontWeight = FontWeight.Bold)){
+                        if (status == StackbricksStatus.STATUS_BETA_AVAILABLE) {
+                            withStyle(
+                                SpanStyle(
+                                    textDecoration = TextDecoration.Underline,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            ) {
                                 append("测试版")
                             }
-                        }else{
+                        } else {
                             append("稳定版")
                         }
                         append("：")
@@ -292,7 +313,7 @@ fun StackbricksComponent(
                                 fontSize = TextUnit(13F, TextUnitType.Sp),
                             )
                         ) {
-                            val message=service.internalVersionData!!
+                            val message = service.internalVersionData!!
                             append("${message.versionName}(${message.versionCode})")
                         }
                     })
