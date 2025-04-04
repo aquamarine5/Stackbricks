@@ -123,7 +123,7 @@ fun StackbricksComponent(
     Box {
         AnimatedVisibility(
             service.internalVersionData?.isStable == false,
-            enter = expandVertically(),
+            enter = expandVertically()+ fadeIn(),
             exit = shrinkVertically()
         ) {
             Card(
@@ -132,7 +132,7 @@ fun StackbricksComponent(
                     containerColor = Color(0xFFF8D86A)
                 ), modifier = Modifier
                     .fillMaxWidth()
-                    .height(with(LocalDensity.current) { buttonSize.toDp() } - 18.dp)
+                    .padding(top=with(LocalDensity.current) { buttonSize.toDp() } - 18.dp)
                     .zIndex(0f)
             ) {
                 Row(
@@ -145,7 +145,7 @@ fun StackbricksComponent(
                     Icon(
                         painterResource(R.drawable.ic_triangle_alert),
                         contentDescription = "Alert",
-                        tint = Color.White
+                        tint = Color.DarkGray
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
@@ -243,7 +243,7 @@ fun StackbricksComponent(
                     coroutineScope.launch {
                         service.isBetaVersionAvailable()
                     }
-                }){}
+                }) {}
                 .onGloballyPositioned {
                     buttonSize = it.boundsInParent().height
                 }
@@ -256,6 +256,11 @@ fun StackbricksComponent(
                     .padding(7.dp, 7.dp, 7.dp, 4.dp)
                     .fillMaxWidth()
             ) {
+                Button(onClick = {
+                    coroutineScope.launch {
+                        service.isBetaVersionAvailable()
+                    }
+                }){Text("1")}
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Start,
@@ -274,49 +279,61 @@ fun StackbricksComponent(
                     )
 
                 }
-                downloadProgress?.let {
-                    LinearProgressIndicator(
-                        progress = { it },
-                        modifier = Modifier.fillMaxWidth(),
-                        gapSize = (-1).dp,
-                        drawStopIndicator = {}
-                    )
-                    if (it == 1F) {
-                        status = StackbricksStatus.STATUS_CLICK_INSTALL
+                AnimatedVisibility(
+                    downloadProgress != null,
+                    enter = expandHorizontally(),
+                    exit = shrinkHorizontally()
+                ) {
+                    downloadProgress?.let {
+                        LinearProgressIndicator(
+                            progress = { it },
+                            modifier = Modifier.fillMaxWidth(),
+                            gapSize = (-1).dp,
+                            drawStopIndicator = {}
+                        )
+                        if (it == 1F) {
+                            status = StackbricksStatus.STATUS_CLICK_INSTALL
+                        }
                     }
                 }
                 AnimatedVisibility(
                     service.internalVersionData != null,
                     enter = expandVertically(),
-                    exit = shrinkHorizontally()
+                    exit = shrinkVertically()
                 ) {
-                    Text(buildAnnotatedString {
-                        append("最新")
-                        if (status == StackbricksStatus.STATUS_BETA_AVAILABLE) {
-                            withStyle(
-                                SpanStyle(
-                                    textDecoration = TextDecoration.Underline,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            ) {
-                                append("测试版")
-                            }
-                        } else {
-                            append("稳定版")
-                        }
-                        append("：")
-                        withStyle(
-                            SpanStyle(
-                                fontFamily = FontFamily(
-                                    Font(R.font.gilroy)
-                                ),
-                                fontSize = TextUnit(13F, TextUnitType.Sp),
-                            )
-                        ) {
-                            val message = service.internalVersionData!!
-                            append("${message.versionName}(${message.versionCode})")
-                        }
-                    })
+                    Column {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            buildAnnotatedString {
+                                append("最新")
+                                if (status == StackbricksStatus.STATUS_BETA_AVAILABLE) {
+                                    withStyle(
+                                        SpanStyle(
+                                            textDecoration = TextDecoration.Underline,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    ) {
+                                        append("测试版")
+                                    }
+                                } else {
+                                    append("稳定版")
+                                }
+                                append("：")
+                                withStyle(
+                                    SpanStyle(
+                                        fontFamily = FontFamily(
+                                            Font(R.font.gilroy)
+                                        ),
+                                        fontSize = 13.sp,
+                                    )
+                                ) {
+                                    val message = service.internalVersionData!!
+                                    append("${message.versionName}(${message.versionCode})")
+                                }
+                            },
+                            fontSize = 12.sp
+                        )
+                    }
                 }
                 Text(
                     text = buildAnnotatedString {
@@ -326,7 +343,7 @@ fun StackbricksComponent(
                                 fontFamily = FontFamily(
                                     Font(R.font.gilroy)
                                 ),
-                                fontSize = TextUnit(13F, TextUnitType.Sp),
+                                fontSize = 13.sp,
                             )
                         ) {
                             append("Stackbricks")
@@ -338,13 +355,13 @@ fun StackbricksComponent(
                                 fontFamily = FontFamily(
                                     Font(R.font.gilroy)
                                 ),
-                                fontSize = TextUnit(13F, TextUnitType.Sp),
+                                fontSize = 13.sp,
                             )
                         ) {
                             append("${service.getCurrentVersionName()}(${service.getCurrentVersion()})")
                         }
                     },
-                    fontSize = TextUnit(12F, TextUnitType.Sp),
+                    fontSize = 12.sp,
                     modifier = Modifier.padding(0.dp, 4.dp, 0.dp, 0.dp)
                 )
             }
