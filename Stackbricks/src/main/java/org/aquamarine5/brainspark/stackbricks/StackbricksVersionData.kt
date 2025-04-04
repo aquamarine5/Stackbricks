@@ -11,4 +11,5 @@ interface StackbricksVersionData {
     val releaseDate: Instant
     val changelog:String
     val forceInstall:Boolean
+    val isStable:Boolean
 }

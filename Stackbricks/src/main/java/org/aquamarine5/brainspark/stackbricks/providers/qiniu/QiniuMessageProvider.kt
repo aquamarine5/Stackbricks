@@ -93,10 +93,12 @@ class QiniuMessageProvider(
         }
     }
 
+    @Deprecated("Use getManifest().latestTest instead", ReplaceWith("StackbricksService.getManifest().latestTest"))
     override suspend fun getLatestTestVersionData(): StackbricksVersionData {
         return getManifest().latestTest
     }
 
+    @Deprecated("Use getManifest().latestStable instead", ReplaceWith("StackbricksService.getManifest().latestStable"))
     override suspend fun getLatestVersionData(): StackbricksVersionData {
         return getManifest().latestStable
     }

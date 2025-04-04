@@ -2,6 +2,10 @@ package org.aquamarine5.brainspark.stackbricks
 
 import android.content.Context
 import android.util.Log
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.content.pm.PackageInfoCompat
 
 open class StackbricksService(
@@ -10,12 +14,19 @@ open class StackbricksService(
     private val packageProvider: StackbricksPackageProvider,
     val state: StackbricksState
 ) {
+    private var _status by state.status
+
+    private var _progress by state.downloadingProgress
 
     private var _manifest: StackbricksManifest? = null
 
     private var _package: StackbricksPackageFile? = null
 
-    private suspend fun getManifest(): StackbricksManifest {
+    private var _version: MutableState<StackbricksVersionData?> = mutableStateOf(null)
+
+    val internalVersionData by _version
+
+    open suspend fun getManifest(): StackbricksManifest {
         return if (_manifest == null) {
             messageProvider.getManifest().apply {
                 _manifest = this
@@ -25,8 +36,12 @@ open class StackbricksService(
         }
     }
 
-    companion object {
-        const val TAG = "StackbricksService"
+    open suspend fun getPackage(): StackbricksPackageFile {
+        return if (_package == null) {
+            downloadPackage().apply {
+                _package = this
+            }
+        } else _package!!
     }
 
     open fun getCurrentVersion(): Long {
@@ -48,11 +63,13 @@ open class StackbricksService(
     open suspend fun isNeedUpdate(): StackbricksVersionData? {
         val currentVersion = getCurrentVersion()
         val updateMessage = getManifest().latestStable
+        _version.value = updateMessage
         return if (currentVersion < updateMessage.versionCode) updateMessage else null
     }
 
     open suspend fun isBetaVersionAvailable(): StackbricksVersionData? {
         val latestTest = getManifest().latestTest
+        _version.value = latestTest
         return if (getCurrentVersion() < latestTest.versionCode) latestTest else null
     }
 
@@ -60,9 +77,11 @@ open class StackbricksService(
         isStable: Boolean = true,
         withProgress: Boolean = true
     ): StackbricksPackageFile {
+        if (_version.value == null)
+            throw NullPointerException("Version data is null, please call isNeedUpdate() or isBetaVersionAvailable() first")
         return packageProvider.downloadPackage(
             context,
-            if (isStable) getManifest().latestStable else getManifest().latestTest,
+            _version.value!!,
             state.downloadingProgress
         ).apply {
             _package = this
@@ -73,22 +92,13 @@ open class StackbricksService(
         return isNeedUpdate() != null
     }
 
-    open suspend fun getLatestPackageInfo(): StackbricksVersionData {
-        return messageProvider.getLatestVersionData()
-    }
+    open suspend fun getLatestPackageInfo(): StackbricksVersionData =
+        getManifest().latestStable
 
-    fun installPackage(packageFile: StackbricksPackageFile) {
-        packageFile.installPackage(context)
-    }
+    open suspend fun getBetaPackageInfo(): StackbricksVersionData =
+        getManifest().latestTest
 
-    open suspend fun downloadAndInstallPackage(versionData: StackbricksVersionData) {
-        val packageFile = downloadPackage()
-        installPackage(packageFile)
-    }
-
-    open suspend fun updateIfAvailable() {
-        isNeedUpdate()?.let {
-            downloadAndInstallPackage(it)
-        }
+    suspend fun installPackage() {
+        getPackage().installPackage(context)
     }
 }
