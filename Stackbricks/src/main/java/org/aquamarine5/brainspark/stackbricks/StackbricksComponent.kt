@@ -74,6 +74,7 @@ import org.aquamarine5.brainspark.stackbricks.providers.qiniu.QiniuConfiguration
 import org.aquamarine5.brainspark.stackbricks.providers.qiniu.QiniuMessageProvider
 import org.aquamarine5.brainspark.stackbricks.providers.qiniu.QiniuPackageProvider
 import java.io.IOException
+import kotlin.math.ceil
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -119,7 +120,7 @@ fun StackbricksComponent(
         }
     }
     val coroutineScope = rememberCoroutineScope()
-    var buttonSize by remember { mutableFloatStateOf(0f) }
+    var buttonSize by remember { mutableFloatStateOf(10.dp.value) }
     Box {
         AnimatedVisibility(
             service.internalVersionData?.isStable == false,
@@ -132,7 +133,7 @@ fun StackbricksComponent(
                     containerColor = Color(0xFFF8D86A)
                 ), modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top=with(LocalDensity.current) { buttonSize.toDp() } - 18.dp)
+                    .padding(top=with(LocalDensity.current) { ceil(buttonSize).toInt().toDp() } - 16.dp)
                     .zIndex(0f)
             ) {
                 Row(
@@ -141,11 +142,10 @@ fun StackbricksComponent(
                         .padding(10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
                     Icon(
                         painterResource(R.drawable.ic_triangle_alert),
-                        contentDescription = "Alert",
-                        tint = Color.DarkGray
+                        contentDescription = "Alert"
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(

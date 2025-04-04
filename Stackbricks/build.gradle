@@ -10,7 +10,7 @@ publishing {
         release(MavenPublication) {
             groupId = 'org.aquamarine5.brainspark'
             artifactId = 'stackbricks'
-            version = '2.2.0-beta4'
+            version = '2.2.0-beta6'
             afterEvaluate {
                 from components.release
             }
