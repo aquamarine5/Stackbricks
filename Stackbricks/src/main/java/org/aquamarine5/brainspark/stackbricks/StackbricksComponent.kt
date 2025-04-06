@@ -1,5 +1,6 @@
 package org.aquamarine5.brainspark.stackbricks
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.expandHorizontally
@@ -9,6 +10,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -16,19 +19,23 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
@@ -69,6 +76,7 @@ import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.aquamarine5.brainspark.stackbricks.providers.qiniu.QiniuConfiguration
 import org.aquamarine5.brainspark.stackbricks.providers.qiniu.QiniuMessageProvider
@@ -76,14 +84,13 @@ import org.aquamarine5.brainspark.stackbricks.providers.qiniu.QiniuPackageProvid
 import java.io.IOException
 import kotlin.math.ceil
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun StackbricksComponent(
     service: StackbricksService,
     modifier: Modifier = Modifier,
-    checkUpdateOnLaunch: Boolean = true,
     trigger: StackbricksEventTrigger? = null
 ) {
+    val context = LocalContext.current
     val buttonColorMatchMap = mapOf(
         StackbricksStatus.STATUS_START to Color(81, 196, 211),
         StackbricksStatus.STATUS_CHECKING to Color(81, 196, 211),
@@ -119,42 +126,90 @@ fun StackbricksComponent(
             }
         }
     }
+    val fontGilroy = SpanStyle(fontSize = 13.sp, fontFamily = FontFamily(Font(R.font.gilroy)))
     val coroutineScope = rememberCoroutineScope()
-    var buttonSize by remember { mutableFloatStateOf(10.dp.value) }
+    var buttonSize by remember { mutableFloatStateOf(30.dp.value) }
+    var isBetaChannel by remember { mutableStateOf(false) }
+    var isCheckUpdateOnLaunch by remember { mutableStateOf(true) }
+    var isShowDialog by remember { mutableStateOf(false) }
+    val isTest = service.checkCurrentIsTestChannel()
     Box {
-        AnimatedVisibility(
-            service.internalVersionData?.isStable == false,
-            enter = expandVertically()+ fadeIn(),
-            exit = shrinkVertically()
-        ) {
-            Card(
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFFF8D86A)
-                ), modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top=with(LocalDensity.current) { ceil(buttonSize).toInt().toDp() } - 16.dp)
-                    .zIndex(0f)
+        Column {
+            Spacer(modifier = Modifier.height(30.dp))
+            AnimatedVisibility(
+                isTest.not() && service.internalVersionData?.isStable == false,
+                enter = expandVertically() + fadeIn(initialAlpha = 0f),
+                exit = shrinkVertically()
             ) {
-                Row(
-                    modifier = Modifier
+                Card(
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFFF8D86A)
+                    ), modifier = Modifier
                         .fillMaxWidth()
-                        .padding(10.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(top = with(LocalDensity.current) {
+                            ceil(buttonSize).toInt().toDp()
+                        } - 58.dp)
+                        .zIndex(0f)
                 ) {
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Icon(
-                        painterResource(R.drawable.ic_triangle_alert),
-                        contentDescription = "Alert"
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        "你正在尝试使用测试版，可能会导致程序崩溃或数据丢失，请谨慎使用。",
-                        color = Color.White,
-                        fontSize = 13.sp,
-                        lineHeight = 18.sp,
-                        fontWeight = FontWeight.W500
-                    )
+                    Spacer(modifier = Modifier.height(18.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            painterResource(R.drawable.ic_triangle_alert),
+                            contentDescription = "Alert"
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "你正在尝试使用测试版，可能会导致程序崩溃或数据丢失，请谨慎使用。",
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            lineHeight = 18.sp,
+                            fontWeight = FontWeight.W500
+                        )
+                    }
+                }
+            }
+        }
+        Column {
+            if (isTest) {
+                Card(
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFFF8D86A)
+                    ), modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = with(LocalDensity.current) {
+                            ceil(buttonSize).toInt().toDp()
+                        } - 58.dp)
+                        .zIndex(0f)
+                ) {
+                    Spacer(modifier = Modifier.height(18.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            painterResource(R.drawable.ic_triangle_alert),
+                            contentDescription = "Alert"
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "你正在使用测试版，可能会导致程序崩溃或数据丢失。",
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            lineHeight = 18.sp,
+                            fontWeight = FontWeight.W500
+                        )
+                    }
                 }
             }
         }
@@ -239,11 +294,6 @@ fun StackbricksComponent(
             colors = ButtonDefaults.buttonColors(buttonColor),
             modifier = Modifier
                 .fillMaxWidth()
-                .combinedClickable(onLongClick = {
-                    coroutineScope.launch {
-                        service.isBetaVersionAvailable()
-                    }
-                }) {}
                 .onGloballyPositioned {
                     buttonSize = it.boundsInParent().height
                 }
@@ -256,11 +306,6 @@ fun StackbricksComponent(
                     .padding(7.dp, 7.dp, 7.dp, 4.dp)
                     .fillMaxWidth()
             ) {
-                Button(onClick = {
-                    coroutineScope.launch {
-                        service.isBetaVersionAvailable()
-                    }
-                }){Text("1")}
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Start,
@@ -319,14 +364,7 @@ fun StackbricksComponent(
                                     append("稳定版")
                                 }
                                 append("：")
-                                withStyle(
-                                    SpanStyle(
-                                        fontFamily = FontFamily(
-                                            Font(R.font.gilroy)
-                                        ),
-                                        fontSize = 13.sp,
-                                    )
-                                ) {
+                                withStyle(fontGilroy) {
                                     val message = service.internalVersionData!!
                                     append("${message.versionName}(${message.versionCode})")
                                 }
@@ -335,50 +373,121 @@ fun StackbricksComponent(
                         )
                     }
                 }
-                Text(
-                    text = buildAnnotatedString {
-                        append("更新服务由 ")
-                        withStyle(
-                            SpanStyle(
-                                fontFamily = FontFamily(
-                                    Font(R.font.gilroy)
-                                ),
-                                fontSize = 13.sp,
-                            )
-                        ) {
-                            append("Stackbricks")
-                        }
-                        append(" 提供。\n")
-                        append("当前程序版本：")
-                        withStyle(
-                            SpanStyle(
-                                fontFamily = FontFamily(
-                                    Font(R.font.gilroy)
-                                ),
-                                fontSize = 13.sp,
-                            )
-                        ) {
-                            append("${service.getCurrentVersionName()}(${service.getCurrentVersion()})")
-                        }
-                    },
-                    fontSize = 12.sp,
-                    modifier = Modifier.padding(0.dp, 4.dp, 0.dp, 0.dp)
-                )
+                Row {
+                    Text(
+                        text = buildAnnotatedString {
+                            append("更新服务由 ")
+                            withStyle(fontGilroy) {
+                                append("Stackbricks")
+                            }
+                            append(" 提供。\n")
+                            append("当前程序版本：")
+                            withStyle(fontGilroy) {
+                                append("${service.getCurrentVersionName()}(${service.getCurrentVersion()})")
+                            }
+                        },
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(0.dp, 4.dp, 0.dp, 0.dp)
+                    )
+                    Column(
+                        verticalArrangement = Arrangement.Bottom,
+                        modifier = Modifier.fillMaxHeight()
+                    ) {
+                        Icon(
+                            painterResource(R.drawable.ic_settings),
+                            null,
+                            modifier = Modifier.clickable {
+                                isShowDialog = true
+                            })
+                    }
+                }
             }
         }
-
+        if (isShowDialog) {
+            AlertDialog(onDismissRequest = { isShowDialog = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        isShowDialog = false
+                        coroutineScope.launch {
+                            context.stackbricksDataStore.updateData { datastore ->
+                                datastore.toBuilder()
+                                    .setIsBetaChannel(isBetaChannel)
+                                    .setIsCheckUpdateOnLaunch(isCheckUpdateOnLaunch)
+                                    .build()
+                            }
+                        }
+                    }) {
+                        Text("确定")
+                    }
+                },
+                icon = {
+                    Image(
+                        painterResource(R.drawable.ic_settings),
+                        null
+                    )
+                },
+                text = {
+                    Column {
+                        Text(buildAnnotatedString {
+                            append("修改 ")
+                            withStyle(fontGilroy) {
+                                append("Stackbricks")
+                            }
+                            append(" 设置：")
+                        }, fontSize = 15.sp)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("使用测试版")
+                            Switch(
+                                isBetaChannel,
+                                onCheckedChange = { isBetaChannel = it },
+                                enabled = isTest.not()
+                            )
+                        }
+                        if (isTest && isBetaChannel) {
+                            Text("当前已经使用测试版本，不能回退到稳定版。", color = Color.Red)
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("启动时检查更新")
+                            Switch(
+                                isCheckUpdateOnLaunch,
+                                onCheckedChange = { isCheckUpdateOnLaunch = it }
+                            )
+                        }
+                    }
+                })
+        }
     }
 
-
     LaunchedEffect(Unit) {
-        if (checkUpdateOnLaunch && service.state.status.value == StackbricksStatus.STATUS_START) {
-            status = StackbricksStatus.STATUS_CHECKING
-            status =
-                if (service.isNewerVersion())
-                    StackbricksStatus.STATUS_NEWER_VERSION
-                else StackbricksStatus.STATUS_NEWEST
+        context.stackbricksDataStore.data.first().let {
+            isBetaChannel = it.isBetaChannel
+            isCheckUpdateOnLaunch = it.isCheckUpdateOnLaunch
+            if (it.isCheckUpdateOnLaunch && service.state.status.value == StackbricksStatus.STATUS_START) {
+                if (isBetaChannel) {
+                    status = StackbricksStatus.STATUS_CHECKING
+                    status =
+                        if (service.isBetaVersionAvailable() != null)
+                            StackbricksStatus.STATUS_BETA_AVAILABLE
+                        else StackbricksStatus.STATUS_NEWEST
+                } else {
+                    status = StackbricksStatus.STATUS_CHECKING
+                    status =
+                        if (service.isNewerVersion())
+                            StackbricksStatus.STATUS_NEWER_VERSION
+                        else StackbricksStatus.STATUS_NEWEST
+                }
+            }
         }
-
     }
 }
 
@@ -387,7 +496,7 @@ fun rememberStackbricksStatus(
     status: StackbricksStatus = StackbricksStatus.STATUS_START,
     downloadProgress: Float? = null
 ): StackbricksState {
-    return remember(status, downloadProgress) {
+    return rememberSaveable(saver = StackbricksState.Saver) {
         StackbricksState(
             status = mutableStateOf(status),
             downloadingProgress = mutableStateOf(downloadProgress)

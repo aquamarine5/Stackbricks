@@ -3,6 +3,7 @@ package org.aquamarine5.brainspark.stackbricks
 import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -12,7 +13,12 @@ open class StackbricksService(
     private val context: Context,
     private val messageProvider: StackbricksMessageProvider,
     private val packageProvider: StackbricksPackageProvider,
-    val state: StackbricksState
+    val state: StackbricksState,
+    private val checkCurrentVersionIsTest: (String, Long) -> Boolean = { versionName, _ ->
+        versionName.contains("beta", true) ||
+                versionName.contains("alpha", true) ||
+                versionName.contains("rc", true)
+    }
 ) {
     private var _status by state.status
 
@@ -25,6 +31,21 @@ open class StackbricksService(
     private var _version: MutableState<StackbricksVersionData?> = mutableStateOf(null)
 
     val internalVersionData by _version
+
+    @Stable
+    open fun checkCurrentIsTestChannel(): Boolean {
+        val versionName = getCurrentVersionName()
+        val versionCode = getCurrentVersion()
+        return if (versionName != null) {
+            checkCurrentVersionIsTest(versionName, versionCode)
+        } else {
+            Log.w(
+                "StackbricksService",
+                "Version name is null, cannot check if current version is test channel"
+            )
+            false
+        }
+    }
 
     open suspend fun getManifest(): StackbricksManifest {
         return if (_manifest == null) {

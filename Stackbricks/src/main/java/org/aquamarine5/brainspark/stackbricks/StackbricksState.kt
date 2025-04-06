@@ -11,4 +11,21 @@ import java.time.Instant
 data class StackbricksState(
     var status: MutableState<StackbricksStatus> = mutableStateOf(StackbricksStatus.STATUS_START),
     var downloadingProgress: MutableState<Float?> = mutableStateOf(null)
-)
+){
+    companion object{
+        val Saver: Saver<StackbricksState, *> = listSaver(
+            save = {
+                listOf(
+                    it.status.value,
+                    it.downloadingProgress.value
+                )
+            },
+            restore = {
+                StackbricksState(
+                    mutableStateOf(it[0] as StackbricksStatus),
+                    mutableStateOf(it[1] as Float?)
+                )
+            }
+        )
+    }
+}
