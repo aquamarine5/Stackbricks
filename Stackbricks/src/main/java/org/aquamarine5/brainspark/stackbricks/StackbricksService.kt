@@ -119,7 +119,10 @@ open class StackbricksService(
     open suspend fun getBetaPackageInfo(): StackbricksVersionData =
         getManifest().latestTest
 
-    suspend fun installPackage() {
-        getPackage().installPackage(context)
+    suspend fun installPackage(): Boolean {
+        getPackage().run {
+            installPackage(context)
+            return this.version.isStable
+        }
     }
 }

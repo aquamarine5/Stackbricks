@@ -133,6 +133,27 @@ fun StackbricksComponent(
     var isCheckUpdateOnLaunch by remember { mutableStateOf(true) }
     var isShowDialog by remember { mutableStateOf(false) }
     val isTest = service.checkCurrentIsTestChannel()
+    LaunchedEffect(Unit) {
+        context.stackbricksDataStore.data.first().let {
+            isBetaChannel = it.isBetaChannel
+            isCheckUpdateOnLaunch = it.isCheckUpdateOnLaunch
+            if (it.isCheckUpdateOnLaunch && service.state.status.value == StackbricksStatus.STATUS_START) {
+                if (isBetaChannel) {
+                    status = StackbricksStatus.STATUS_CHECKING
+                    status =
+                        if (service.isBetaVersionAvailable() != null)
+                            StackbricksStatus.STATUS_BETA_AVAILABLE
+                        else StackbricksStatus.STATUS_NEWEST
+                } else {
+                    status = StackbricksStatus.STATUS_CHECKING
+                    status =
+                        if (service.isNewerVersion())
+                            StackbricksStatus.STATUS_NEWER_VERSION
+                        else StackbricksStatus.STATUS_NEWEST
+                }
+            }
+        }
+    }
     Box {
         Column {
             Spacer(modifier = Modifier.height(30.dp))
@@ -152,7 +173,7 @@ fun StackbricksComponent(
                         } - 58.dp)
                         .zIndex(0f)
                 ) {
-                    Spacer(modifier = Modifier.height(18.dp))
+                    Spacer(modifier = Modifier.height(26.dp))
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -189,7 +210,7 @@ fun StackbricksComponent(
                         } - 58.dp)
                         .zIndex(0f)
                 ) {
-                    Spacer(modifier = Modifier.height(18.dp))
+                    Spacer(modifier = Modifier.height(26.dp))
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -198,7 +219,7 @@ fun StackbricksComponent(
                     ) {
                         Spacer(modifier = Modifier.width(4.dp))
                         Icon(
-                            painterResource(R.drawable.ic_triangle_alert),
+                            painterResource(R.drawable.ic_badge_info),
                             contentDescription = "Alert"
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -222,6 +243,7 @@ fun StackbricksComponent(
                             coroutineScope.launch {
                                 runCatching {
                                     status = StackbricksStatus.STATUS_CHECKING
+                                    trigger?.onCheckUpdate(isTestChannel = false)
                                     status =
                                         if (service.isNewerVersion())
                                             StackbricksStatus.STATUS_NEWER_VERSION
@@ -243,6 +265,7 @@ fun StackbricksComponent(
                                 runCatching {
                                     downloadProgress = 0f
                                     service.downloadPackage()
+                                    trigger?.onDownloadPackage()
                                 }.onFailure {
                                     status = StackbricksStatus.STATUS_INTERNAL_ERROR
                                     errorTips = "下载失败：${it.localizedMessage}"
@@ -257,7 +280,9 @@ fun StackbricksComponent(
                         StackbricksStatus.STATUS_CLICK_INSTALL -> {
                             coroutineScope.launch {
                                 runCatching {
-                                    service.installPackage()
+                                    service.installPackage().let {
+                                        trigger?.onInstallPackage(it)
+                                    }
                                 }.onSuccess {
                                     status = StackbricksStatus.STATUS_NEWEST
                                 }.onFailure {
@@ -276,6 +301,7 @@ fun StackbricksComponent(
                                         if (service.isNewerVersion())
                                             StackbricksStatus.STATUS_NEWER_VERSION
                                         else StackbricksStatus.STATUS_NEWEST
+                                    trigger?.onCheckUpdate(isTestChannel = false)
                                 }.onFailure {
                                     status = StackbricksStatus.STATUS_INTERNAL_ERROR
                                     errorTips = "内部错误：${it.localizedMessage}"
@@ -387,19 +413,17 @@ fun StackbricksComponent(
                             }
                         },
                         fontSize = 12.sp,
-                        modifier = Modifier.padding(0.dp, 4.dp, 0.dp, 0.dp)
+                        modifier = Modifier
+                            .padding(0.dp, 4.dp, 0.dp, 0.dp)
+                            .weight(1f)
                     )
-                    Column(
-                        verticalArrangement = Arrangement.Bottom,
-                        modifier = Modifier.fillMaxHeight()
-                    ) {
-                        Icon(
-                            painterResource(R.drawable.ic_settings),
-                            null,
-                            modifier = Modifier.clickable {
-                                isShowDialog = true
-                            })
-                    }
+                    Icon(
+                        painterResource(R.drawable.ic_settings),
+                        null,
+                        modifier = Modifier.clickable {
+                            isShowDialog = true
+                        })
+
                 }
             }
         }
@@ -444,7 +468,10 @@ fun StackbricksComponent(
                             Text("使用测试版")
                             Switch(
                                 isBetaChannel,
-                                onCheckedChange = { isBetaChannel = it },
+                                onCheckedChange = {
+                                    isBetaChannel = it
+                                    trigger?.onChannelChanged(it)
+                                },
                                 enabled = isTest.not()
                             )
                         }
@@ -460,33 +487,14 @@ fun StackbricksComponent(
                             Text("启动时检查更新")
                             Switch(
                                 isCheckUpdateOnLaunch,
-                                onCheckedChange = { isCheckUpdateOnLaunch = it }
+                                onCheckedChange = {
+                                    isCheckUpdateOnLaunch = it
+                                    trigger?.onCheckUpdateOnLaunchChanged(it)
+                                }
                             )
                         }
                     }
                 })
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        context.stackbricksDataStore.data.first().let {
-            isBetaChannel = it.isBetaChannel
-            isCheckUpdateOnLaunch = it.isCheckUpdateOnLaunch
-            if (it.isCheckUpdateOnLaunch && service.state.status.value == StackbricksStatus.STATUS_START) {
-                if (isBetaChannel) {
-                    status = StackbricksStatus.STATUS_CHECKING
-                    status =
-                        if (service.isBetaVersionAvailable() != null)
-                            StackbricksStatus.STATUS_BETA_AVAILABLE
-                        else StackbricksStatus.STATUS_NEWEST
-                } else {
-                    status = StackbricksStatus.STATUS_CHECKING
-                    status =
-                        if (service.isNewerVersion())
-                            StackbricksStatus.STATUS_NEWER_VERSION
-                        else StackbricksStatus.STATUS_NEWEST
-                }
-            }
         }
     }
 }
