@@ -160,7 +160,7 @@ fun StackbricksComponent(
         Column {
             Spacer(modifier = Modifier.height(30.dp))
             AnimatedVisibility(
-                isTest.not() && service.internalVersionData?.isStable == false,
+                isTest.not() && service.internalVersionData?.isStable == false && buttonSize > 40.dp.value,
                 enter = expandVertically() + fadeIn(initialAlpha = 0f),
                 exit = shrinkVertically()
             ) {
@@ -172,10 +172,10 @@ fun StackbricksComponent(
                         .fillMaxWidth()
                         .padding(top = with(LocalDensity.current) {
                             ceil(buttonSize).toInt().toDp()
-                        } - 29.dp)
+                        } - 60.dp)
                         .zIndex(0f)
                 ) {
-                    Spacer(modifier = Modifier.height(21.dp))
+                    Spacer(modifier = Modifier.height(23.dp))
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -210,10 +210,10 @@ fun StackbricksComponent(
                         .fillMaxWidth()
                         .padding(top = with(LocalDensity.current) {
                             ceil(buttonSize).toInt().toDp()
-                        } - 29.dp)
+                        } - 31.dp)
                         .zIndex(0f)
                 ) {
-                    Spacer(modifier = Modifier.height(21.dp))
+                    Spacer(modifier = Modifier.height(23.dp))
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
