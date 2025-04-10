@@ -5,8 +5,10 @@ import com.alibaba.fastjson2.JSONObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Request
+import org.aquamarine5.brainspark.stackbricks.StackbricksManifest
 import org.aquamarine5.brainspark.stackbricks.StackbricksMessageProvider
 import org.aquamarine5.brainspark.stackbricks.StackbricksUnsupportedConfigException
+import org.aquamarine5.brainspark.stackbricks.StackbricksVersionData
 import java.net.URL
 import java.time.Instant
 
@@ -15,10 +17,10 @@ class QiniuMessageProvider(
 ) : StackbricksMessageProvider {
     companion object {
         const val LOGTAG = "QiniuMessageProvider"
-        const val SUPPORTED_PARSE_CONFIG_VERSION = 1
+        const val SUPPORTED_PARSE_CONFIG_VERSION = 2
     }
 
-    override suspend fun getLatestVersionData(): QiniuVersionData {
+    override suspend fun getManifest(): QiniuManifest {
         val configUrl = URL("http://${configuration.host}/${configuration.configFilePath}")
         val req = Request.Builder()
             .get()
@@ -33,40 +35,73 @@ class QiniuMessageProvider(
                 }
                 val body = response.body ?: throw IllegalStateException("Empty response body")
                 val baseJson = JSONObject.parseObject(body.string())
+                val version=baseJson.getIntValue("manifestVersion")
                 val isVersionSupported =
-                    SUPPORTED_PARSE_CONFIG_VERSION >= baseJson.getIntValue("@version")
-                if (isVersionSupported) {
+                    SUPPORTED_PARSE_CONFIG_VERSION >= version
+                if (!isVersionSupported) {
                     Log.w(
                         LOGTAG,
-                        "Unsupported config version: ${baseJson.getIntValue("@version")}, maximum supported: $SUPPORTED_PARSE_CONFIG_VERSION"
+                        "Unsupported config version: $version, maximum supported: $SUPPORTED_PARSE_CONFIG_VERSION"
                     )
-                }
-                try {
-                    val rawJson = baseJson.getJSONObject("latest")
-                    val versionCode = rawJson.getIntValue("versionCode")
-                    val versionName = rawJson.getString("versionName")
-                    val downloadUrl = rawJson.getString("downloadUrl")
-                    val releaseDate = Instant.ofEpochMilli(rawJson.getLongValue("releaseDate"))
-                    return@withContext QiniuVersionData(
-                        versionCode,
-                        versionName,
-                        downloadUrl,
-                        releaseDate,
-                        rawJson.getString("packageName"),
-                        rawJson
-                    )
-                } catch (e: Exception) {
-                    if (isVersionSupported.not()) {
+                }else{
+                    if(version==1){
                         throw StackbricksUnsupportedConfigException(
-                            baseJson.getIntValue("@version"),
-                            SUPPORTED_PARSE_CONFIG_VERSION,
-                            e
+                            version,
+                            1
                         )
-                    } else {
-                        throw e
                     }
                 }
+                runCatching {
+                    return@runCatching QiniuManifest(
+                        baseJson.getJSONObject("latestStable").run {
+                            QiniuVersionData(
+                                getInteger("versionCode"),
+                                getString("versionName"),
+                                getString("downloadUrl"),
+                                Instant.ofEpochMilli(getLong("releaseDate")),
+                                getString("packageName"),
+                                getString("changelog"),
+                                getBoolean("forceInstall"),
+                                isStable = true
+                            )
+                        },
+                        baseJson.getJSONObject("latestTest").run {
+                            QiniuVersionData(
+                                getInteger("versionCode"),
+                                getString("versionName"),
+                                getString("downloadUrl"),
+                                Instant.ofEpochMilli(getLong("releaseDate")),
+                                getString("packageName"),
+                                getString("changelog"),
+                                getBoolean("forceInstall"),
+                                isStable = false
+                            )
+                        },
+                        version
+                    )
+                }.onFailure {
+                    if (isVersionSupported.not()) {
+                        throw StackbricksUnsupportedConfigException(
+                            version,
+                            SUPPORTED_PARSE_CONFIG_VERSION,
+                            it
+                        )
+                    } else {
+                        throw it
+                    }
+                }.getOrThrow()
+
             }
         }
+    }
+
+    @Deprecated("Use getManifest().latestTest instead", ReplaceWith("StackbricksService.getManifest().latestTest"))
+    override suspend fun getLatestTestVersionData(): StackbricksVersionData {
+        return getManifest().latestTest
+    }
+
+    @Deprecated("Use getManifest().latestStable instead", ReplaceWith("StackbricksService.getManifest().latestStable"))
+    override suspend fun getLatestVersionData(): StackbricksVersionData {
+        return getManifest().latestStable
     }
 }

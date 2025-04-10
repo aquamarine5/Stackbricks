@@ -9,4 +9,7 @@ interface StackbricksVersionData {
     val versionName: String
     val downloadFilename: String
     val releaseDate: Instant
+    val changelog:String
+    val forceInstall:Boolean
+    val isStable:Boolean
 }
