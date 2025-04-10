@@ -51,7 +51,7 @@ class QiniuPackageProvider(
                 file.sink().buffer().use { sink ->
                     sink.writeAll(progressedBody.source())
                 }
-                return@withContext StackbricksPackageFile(file,versionData)
+                return@withContext StackbricksPackageFile(file,versionData.isStable)
             }
         }
     }

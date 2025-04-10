@@ -8,7 +8,7 @@ import java.io.File
 
 open class StackbricksPackageFile(
     val file: File,
-    val version: StackbricksVersionData,
+    val isStable: Boolean,
 ) {
     open fun installPackage(context: Context) {
         context.startActivity(Intent(Intent.ACTION_VIEW).apply {

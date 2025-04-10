@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,6 +34,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -105,7 +107,7 @@ fun StackbricksComponent(
     val tipsTextMatchMap = mapOf(
         StackbricksStatus.STATUS_NEWEST to stringResource(R.string.stackbricks_tips_newest),
         StackbricksStatus.STATUS_NEWER_VERSION to stringResource(R.string.stackbricks_tips_newversion),
-        StackbricksStatus.STATUS_BETA_AVAILABLE to "有测试版可用",
+        StackbricksStatus.STATUS_BETA_AVAILABLE to "有新测试版可用",
         StackbricksStatus.STATUS_START to stringResource(R.string.stackbricks_tips_checkupdate),
         StackbricksStatus.STATUS_INTERNAL_ERROR to stringResource(R.string.stackbricks_tips_programerror),
         StackbricksStatus.STATUS_NETWORK_ERROR to stringResource(R.string.stackbricks_tips_networkerror),
@@ -165,15 +167,15 @@ fun StackbricksComponent(
                 Card(
                     shape = RoundedCornerShape(18.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = Color(0xFFF8D86A)
+                        containerColor = Color(0xFFFFE288)
                     ), modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = with(LocalDensity.current) {
                             ceil(buttonSize).toInt().toDp()
-                        } - 58.dp)
+                        } - 29.dp)
                         .zIndex(0f)
                 ) {
-                    Spacer(modifier = Modifier.height(26.dp))
+                    Spacer(modifier = Modifier.height(21.dp))
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -183,12 +185,13 @@ fun StackbricksComponent(
                         Spacer(modifier = Modifier.width(4.dp))
                         Icon(
                             painterResource(R.drawable.ic_triangle_alert),
-                            contentDescription = "Alert"
+                            contentDescription = "Alert",
+                            tint = MaterialTheme.colorScheme.primaryContainer
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             "你正在尝试使用测试版，可能会导致程序崩溃或数据丢失，请谨慎使用。",
-                            color = Color.White,
+                            color = Color.Black,
                             fontSize = 13.sp,
                             lineHeight = 18.sp,
                             fontWeight = FontWeight.W500
@@ -198,19 +201,19 @@ fun StackbricksComponent(
             }
         }
         Column {
-            if (isTest) {
+            if (isTest && buttonSize > 40.dp.value) {
                 Card(
                     shape = RoundedCornerShape(18.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = Color(0xFFF8D86A)
+                        containerColor = Color(0xFFFFE288)
                     ), modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = with(LocalDensity.current) {
                             ceil(buttonSize).toInt().toDp()
-                        } - 58.dp)
+                        } - 29.dp)
                         .zIndex(0f)
                 ) {
-                    Spacer(modifier = Modifier.height(26.dp))
+                    Spacer(modifier = Modifier.height(21.dp))
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -220,12 +223,13 @@ fun StackbricksComponent(
                         Spacer(modifier = Modifier.width(4.dp))
                         Icon(
                             painterResource(R.drawable.ic_badge_info),
-                            contentDescription = "Alert"
+                            contentDescription = "Alert",
+                            tint = MaterialTheme.colorScheme.primaryContainer
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             "你正在使用测试版，可能会导致程序崩溃或数据丢失。",
-                            color = Color.White,
+                            color = Color.Black,
                             fontSize = 13.sp,
                             lineHeight = 18.sp,
                             fontWeight = FontWeight.W500
@@ -260,6 +264,7 @@ fun StackbricksComponent(
                             // abort
                         }
 
+                        StackbricksStatus.STATUS_BETA_AVAILABLE,
                         StackbricksStatus.STATUS_NEWER_VERSION -> {
                             coroutineScope.launch {
                                 runCatching {
@@ -271,10 +276,6 @@ fun StackbricksComponent(
                                     errorTips = "下载失败：${it.localizedMessage}"
                                 }
                             }
-                        }
-
-                        StackbricksStatus.STATUS_BETA_AVAILABLE -> {
-
                         }
 
                         StackbricksStatus.STATUS_CLICK_INSTALL -> {
@@ -352,23 +353,26 @@ fun StackbricksComponent(
                 }
                 AnimatedVisibility(
                     downloadProgress != null,
-                    enter = expandHorizontally(),
-                    exit = shrinkHorizontally()
+                    enter = expandVertically(),
+                    exit = shrinkVertically()
                 ) {
-                    downloadProgress?.let {
-                        LinearProgressIndicator(
-                            progress = { it },
-                            modifier = Modifier.fillMaxWidth(),
-                            gapSize = (-1).dp,
-                            drawStopIndicator = {}
-                        )
-                        if (it == 1F) {
-                            status = StackbricksStatus.STATUS_CLICK_INSTALL
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        downloadProgress?.let {
+                            LinearProgressIndicator(
+                                progress = { it },
+                                modifier = Modifier.fillMaxWidth(),
+                                gapSize = (-1).dp,
+                                drawStopIndicator = {}
+                            )
+                            if (it == 1F) {
+                                status = StackbricksStatus.STATUS_CLICK_INSTALL
+                            }
                         }
                     }
                 }
                 AnimatedVisibility(
-                    service.internalVersionData != null,
+                    service.internalVersionData != null && status != StackbricksStatus.STATUS_NEWEST,
                     enter = expandVertically(),
                     exit = shrinkVertically()
                 ) {
@@ -399,7 +403,10 @@ fun StackbricksComponent(
                         )
                     }
                 }
-                Row {
+                Row(
+                    verticalAlignment = Alignment.Bottom,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     Text(
                         text = buildAnnotatedString {
                             append("更新服务由 ")
@@ -420,14 +427,27 @@ fun StackbricksComponent(
                     Icon(
                         painterResource(R.drawable.ic_settings),
                         null,
-                        modifier = Modifier.clickable {
-                            isShowDialog = true
-                        })
+                        modifier = Modifier
+                            .clickable {
+                                isShowDialog = true
+                            }
+                            .size(24.dp)
+                    )
 
                 }
             }
         }
         if (isShowDialog) {
+            if (isBetaChannel.not() && service.checkCurrentIsTestChannel()) {
+                isBetaChannel = true
+                LaunchedEffect(Unit) {
+                    context.stackbricksDataStore.updateData { datastore ->
+                        datastore.toBuilder()
+                            .setIsBetaChannel(isBetaChannel)
+                            .build()
+                    }
+                }
+            }
             AlertDialog(onDismissRequest = { isShowDialog = false },
                 confirmButton = {
                     TextButton(onClick = {
@@ -439,15 +459,23 @@ fun StackbricksComponent(
                                     .setIsCheckUpdateOnLaunch(isCheckUpdateOnLaunch)
                                     .build()
                             }
+                            if (isBetaChannel) {
+                                status = StackbricksStatus.STATUS_CHECKING
+                                status =
+                                    if (service.isBetaVersionAvailable() != null)
+                                        StackbricksStatus.STATUS_BETA_AVAILABLE
+                                    else StackbricksStatus.STATUS_NEWEST
+                            }
                         }
                     }) {
                         Text("确定")
                     }
                 },
                 icon = {
-                    Image(
+                    Icon(
                         painterResource(R.drawable.ic_settings),
-                        null
+                        null,
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 },
                 text = {
@@ -458,7 +486,7 @@ fun StackbricksComponent(
                                 append("Stackbricks")
                             }
                             append(" 设置：")
-                        }, fontSize = 15.sp)
+                        }, fontSize = 17.sp, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(
                             verticalAlignment = Alignment.CenterVertically,

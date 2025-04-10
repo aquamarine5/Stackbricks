@@ -20,17 +20,9 @@ open class StackbricksService(
                 versionName.contains("rc", true)
     }
 ) {
-    private var _status by state.status
-
-    private var _progress by state.downloadingProgress
-
     private var _manifest: StackbricksManifest? = null
 
-    private var _package: StackbricksPackageFile? = null
-
-    private var _version: MutableState<StackbricksVersionData?> = mutableStateOf(null)
-
-    val internalVersionData by _version
+    val internalVersionData by state.tmpVersion
 
     @Stable
     open fun checkCurrentIsTestChannel(): Boolean {
@@ -58,11 +50,11 @@ open class StackbricksService(
     }
 
     open suspend fun getPackage(): StackbricksPackageFile {
-        return if (_package == null) {
+        return if (state.tmpPackage == null) {
             downloadPackage().apply {
-                _package = this
+                state.tmpPackage = this
             }
-        } else _package!!
+        } else state.tmpPackage!!
     }
 
     open fun getCurrentVersion(): Long {
@@ -84,13 +76,13 @@ open class StackbricksService(
     open suspend fun isNeedUpdate(): StackbricksVersionData? {
         val currentVersion = getCurrentVersion()
         val updateMessage = getManifest().latestStable
-        _version.value = updateMessage
+        state.tmpVersion.value = updateMessage
         return if (currentVersion < updateMessage.versionCode) updateMessage else null
     }
 
     open suspend fun isBetaVersionAvailable(): StackbricksVersionData? {
         val latestTest = getManifest().latestTest
-        _version.value = latestTest
+        state.tmpVersion.value= latestTest
         return if (getCurrentVersion() < latestTest.versionCode) latestTest else null
     }
 
@@ -98,14 +90,14 @@ open class StackbricksService(
         isStable: Boolean = true,
         withProgress: Boolean = true
     ): StackbricksPackageFile {
-        if (_version.value == null)
+        if ( state.tmpVersion.value == null)
             throw NullPointerException("Version data is null, please call isNeedUpdate() or isBetaVersionAvailable() first")
         return packageProvider.downloadPackage(
             context,
-            _version.value!!,
+            state.tmpVersion.value!!,
             state.downloadingProgress
         ).apply {
-            _package = this
+            state.tmpPackage = this
         }
     }
 
@@ -122,7 +114,7 @@ open class StackbricksService(
     suspend fun installPackage(): Boolean {
         getPackage().run {
             installPackage(context)
-            return this.version.isStable
+            return this.isStable
         }
     }
 }
