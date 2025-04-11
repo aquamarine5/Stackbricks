@@ -1,31 +1,22 @@
 package org.aquamarine5.brainspark.stackbricks
 
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -33,16 +24,14 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -53,22 +42,17 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInParent
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.ParagraphStyle
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontSynthesis
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
@@ -134,7 +118,9 @@ fun StackbricksComponent(
     var isBetaChannel by remember { mutableStateOf(false) }
     var isCheckUpdateOnLaunch by remember { mutableStateOf(true) }
     var isShowDialog by remember { mutableStateOf(false) }
-    val isTest = service.checkCurrentIsTestChannel()
+    val isCurrentTestVersion = service.checkCurrentIsTestChannel()
+    var isShowChangelogDialog by remember { mutableStateOf(false) }
+    var isForceInstallDialog by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         context.stackbricksDataStore.data.first().let {
             isBetaChannel = it.isBetaChannel
@@ -160,7 +146,7 @@ fun StackbricksComponent(
         Column {
             Spacer(modifier = Modifier.height(30.dp))
             AnimatedVisibility(
-                isTest.not() && service.internalVersionData?.isStable == false && buttonSize > 40.dp.value,
+                isCurrentTestVersion.not() && service.internalVersionData?.isStable == false && buttonSize > 40.dp.value,
                 enter = expandVertically() + fadeIn(initialAlpha = 0f),
                 exit = shrinkVertically()
             ) {
@@ -201,7 +187,7 @@ fun StackbricksComponent(
             }
         }
         Column {
-            if (isTest && buttonSize > 40.dp.value) {
+            if (isCurrentTestVersion && buttonSize > 40.dp.value) {
                 Card(
                     shape = RoundedCornerShape(18.dp),
                     colors = CardDefaults.cardColors(
@@ -238,6 +224,58 @@ fun StackbricksComponent(
                 }
             }
         }
+        LaunchedEffect(service.internalVersionData) {
+            if (service.internalVersionData?.forceInstall == true) {
+                isForceInstallDialog = true
+            }
+        }
+        if (isForceInstallDialog) {
+            AlertDialog(
+                onDismissRequest = { },
+                confirmButton = {
+                    TextButton(onClick = {
+                        isForceInstallDialog = false
+                        coroutineScope.launch {
+                            runCatching {
+                                service.downloadPackage().let {
+                                    trigger?.onDownloadPackage()
+                                }
+                                service.installPackage().let {
+                                    trigger?.onInstallPackage(it, service.internalVersionData!!)
+                                }
+                            }.onFailure {
+                                status = StackbricksStatus.STATUS_INTERNAL_ERROR
+                                errorTips = "安装失败"
+                                isForceInstallDialog = false
+                            }
+                        }
+                    }) {
+                        Text("下载并安装")
+                    }
+                },
+                text = {
+                    Column {
+                        Text("版本过低需要强制更新", fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        downloadProgress?.let {
+                            LinearProgressIndicator(
+                                progress = { it },
+                                modifier = Modifier.fillMaxWidth(),
+                                gapSize = (-1).dp,
+                                drawStopIndicator = {}
+                            )
+                            if (it == 1F) {
+                                status = StackbricksStatus.STATUS_CLICK_INSTALL
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            "当前版本为 ${service.getCurrentVersionName()}(${service.getCurrentVersion()})，版本过低需要强制安装新版本。\n" +
+                                    "新版本：${service.internalVersionData?.versionName}(${service.internalVersionData?.versionCode})\n"
+                        )
+                    }
+                })
+        }
         Button(
             onClick = {
                 try {
@@ -248,7 +286,12 @@ fun StackbricksComponent(
                                 runCatching {
                                     status = StackbricksStatus.STATUS_CHECKING
                                     trigger?.onCheckUpdate(isTestChannel = false)
-                                    status =
+                                    status = if (isBetaChannel)
+                                        if (service.isBetaVersionAvailable() != null)
+                                            StackbricksStatus.STATUS_BETA_AVAILABLE
+                                        else
+                                            StackbricksStatus.STATUS_NEWEST
+                                    else
                                         if (service.isNewerVersion())
                                             StackbricksStatus.STATUS_NEWER_VERSION
                                         else StackbricksStatus.STATUS_NEWEST
@@ -282,7 +325,7 @@ fun StackbricksComponent(
                             coroutineScope.launch {
                                 runCatching {
                                     service.installPackage().let {
-                                        trigger?.onInstallPackage(it)
+                                        trigger?.onInstallPackage(it, service.internalVersionData!!)
                                     }
                                 }.onSuccess {
                                     status = StackbricksStatus.STATUS_NEWEST
@@ -349,7 +392,6 @@ fun StackbricksComponent(
                         fontWeight = FontWeight.Bold,
                         fontSize = TextUnit(16F, TextUnitType.Sp)
                     )
-
                 }
                 AnimatedVisibility(
                     downloadProgress != null,
@@ -403,6 +445,25 @@ fun StackbricksComponent(
                         )
                     }
                 }
+                if (isShowChangelogDialog) {
+                    AlertDialog(
+                        onDismissRequest = { isShowChangelogDialog = false },
+                        confirmButton = {
+                            TextButton(onClick = { isShowChangelogDialog = false }) {
+                                Text("确定")
+                            }
+                        },
+                        text = {
+                            Column {
+                                Text("更新日志", fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                service.internalVersionData?.changelog?.let {
+                                    Text(it)
+                                }
+                            }
+                        }
+                    )
+                }
                 Row(
                     verticalAlignment = Alignment.Bottom,
                     modifier = Modifier.fillMaxWidth()
@@ -424,15 +485,36 @@ fun StackbricksComponent(
                             .padding(0.dp, 4.dp, 0.dp, 0.dp)
                             .weight(1f)
                     )
-                    Icon(
-                        painterResource(R.drawable.ic_settings),
-                        null,
-                        modifier = Modifier
-                            .clickable {
-                                isShowDialog = true
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        AnimatedVisibility(
+                            service.internalVersionData != null && (status == StackbricksStatus.STATUS_BETA_AVAILABLE || status == StackbricksStatus.STATUS_NEWER_VERSION),
+                            enter = fadeIn(),
+                            exit = fadeOut()
+                        ) {
+                            IconButton(
+                                onClick = {
+                                    isShowChangelogDialog = true
+                                }
+                            ) {
+                                Icon(
+                                    painterResource(R.drawable.ic_file_text),
+                                    null,
+                                    modifier = Modifier.size(24.dp)
+                                )
                             }
-                            .size(24.dp)
-                    )
+                        }
+                        Icon(
+                            painterResource(R.drawable.ic_settings),
+                            null,
+                            modifier = Modifier
+                                .clickable {
+                                    isShowDialog = true
+                                }
+                                .size(24.dp)
+                        )
+                    }
 
                 }
             }
@@ -500,10 +582,10 @@ fun StackbricksComponent(
                                     isBetaChannel = it
                                     trigger?.onChannelChanged(it)
                                 },
-                                enabled = isTest.not()
+                                enabled = isCurrentTestVersion.not()
                             )
                         }
-                        if (isTest && isBetaChannel) {
+                        if (isCurrentTestVersion && isBetaChannel) {
                             Text("当前已经使用测试版本，不能回退到稳定版。", color = Color.Red)
                         }
                         Spacer(modifier = Modifier.height(8.dp))
