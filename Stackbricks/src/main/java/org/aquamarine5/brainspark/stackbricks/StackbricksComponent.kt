@@ -489,7 +489,8 @@ fun StackbricksComponent(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         AnimatedVisibility(
-                            service.internalVersionData != null && (status == StackbricksStatus.STATUS_BETA_AVAILABLE || status == StackbricksStatus.STATUS_NEWER_VERSION),
+                            service.internalVersionData != null && (status == StackbricksStatus.STATUS_BETA_AVAILABLE || status == StackbricksStatus.STATUS_NEWER_VERSION) && service.internalVersionData?.changelog.isNullOrBlank()
+                                .not(),
                             enter = fadeIn(),
                             exit = fadeOut()
                         ) {
@@ -586,7 +587,10 @@ fun StackbricksComponent(
                             )
                         }
                         if (isCurrentTestVersion && isBetaChannel) {
-                            Text("当前已经使用测试版本，不能回退到稳定版。", color = Color.Red)
+                            Text(
+                                "当前已经使用测试版本，不能回退到稳定版。",
+                                color = Color(0xFFF34718)
+                            )
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(
@@ -600,7 +604,15 @@ fun StackbricksComponent(
                                 onCheckedChange = {
                                     isCheckUpdateOnLaunch = it
                                     trigger?.onCheckUpdateOnLaunchChanged(it)
-                                }
+                                },
+                                enabled = service.buildConfig?.isAllowedToDisableCheckUpdateOnLaunch
+                                    ?: true
+                            )
+                        }
+                        if (service.buildConfig?.isAllowedToDisableCheckUpdateOnLaunch == false) {
+                            Text(
+                                "开发者设置了应用更新策略，不允许修改关闭启动时检查更新值。",
+                                color = Color(0xFFF34718)
                             )
                         }
                     }

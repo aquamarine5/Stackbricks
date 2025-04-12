@@ -14,6 +14,7 @@ open class StackbricksService(
     private val messageProvider: StackbricksMessageProvider,
     private val packageProvider: StackbricksPackageProvider,
     val state: StackbricksState,
+    val buildConfig: ApplicationBuildConfig? = null,
     private val checkCurrentVersionIsTest: (String, Long) -> Boolean = { versionName, _ ->
         versionName.contains("beta", true) ||
                 versionName.contains("alpha", true) ||
@@ -58,6 +59,8 @@ open class StackbricksService(
     }
 
     open fun getCurrentVersion(): Long {
+        if (buildConfig?.versionCode != null)
+            return buildConfig.versionCode
         return PackageInfoCompat.getLongVersionCode(
             context.packageManager.getPackageInfo(
                 context.packageName,
@@ -67,6 +70,8 @@ open class StackbricksService(
     }
 
     open fun getCurrentVersionName(): String? {
+        if (buildConfig?.versionName != null)
+            return buildConfig.versionName
         return context.packageManager.getPackageInfo(
             context.packageName,
             0
@@ -82,7 +87,10 @@ open class StackbricksService(
 
     open suspend fun isBetaVersionAvailable(): StackbricksVersionData? {
         val latestTest = getManifest().latestTest
-        state.tmpVersion.value= latestTest
+        state.tmpVersion.value = latestTest
+        isNeedUpdate()?.let {
+            return it
+        }
         return if (getCurrentVersion() < latestTest.versionCode) latestTest else null
     }
 
@@ -90,7 +98,7 @@ open class StackbricksService(
         isStable: Boolean = true,
         withProgress: Boolean = true
     ): StackbricksPackageFile {
-        if ( state.tmpVersion.value == null)
+        if (state.tmpVersion.value == null)
             throw NullPointerException("Version data is null, please call isNeedUpdate() or isBetaVersionAvailable() first")
         return packageProvider.downloadPackage(
             context,
