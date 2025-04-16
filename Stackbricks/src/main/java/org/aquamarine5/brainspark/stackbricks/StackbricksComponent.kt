@@ -414,7 +414,7 @@ fun StackbricksComponent(
                     }
                 }
                 AnimatedVisibility(
-                    service.internalVersionData != null && status != StackbricksStatus.STATUS_NEWEST,
+                    service.internalVersionData != null && status != StackbricksStatus.STATUS_NEWEST && status != StackbricksStatus.STATUS_CHECKING,
                     enter = expandVertically(),
                     exit = shrinkVertically()
                 ) {
