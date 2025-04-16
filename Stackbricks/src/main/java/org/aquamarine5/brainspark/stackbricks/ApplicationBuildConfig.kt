@@ -7,7 +7,7 @@
 package org.aquamarine5.brainspark.stackbricks
 
 data class ApplicationBuildConfig(
-    val versionName: String?,
-    val versionCode: Long?,
+    val versionName: String?=null,
+    val versionCode: Long?=null,
     val isAllowedToDisableCheckUpdateOnLaunch: Boolean = true
 )

@@ -48,51 +48,37 @@ plugins {
 > [!WARNING]
 > `$latest_sgp_version`和`$latest_version`并不同步。
 
-> [!TIP]
-> Github Packages源可以设置为`uri("https://maven.pkg.github.com/aquamarine5/*")`从而引入所有和Stackbricks相关的库。
-
 ## 使用
 
 ### 对于Jetpack Compose
 
-- 推荐使用`StackbricksStateService`，通过`StackbricksStateService`的`state`属性获取状态。
-- 使用`StackbricksComponent()`渲染Compose组件。
-
 ```kotlin
-val messageProvider: StackbricksMessageProvider = TODO()
-val packageProvider: StackbricksPackageProvider = TODO()
-val stackbricksState = rememberStackbricksStatus()
-StackbricksComponent(
-    StackbricksStateService(
-        LocalContext.current,
-        messageProvider,
-        packageProvider,
-        stackbricksState
+val service = StackbricksService(
+    LocalContext.current,
+    messageProvider = TODO(),
+    packageProvider = TODO(),
+    rememberStackbricksStatus(),
+    buildConfig = ApplicationBuildConfig(
+        versionName = BuildConfig.VERSION_NAME,
+        isAllowedToDisableCheckUpdateOnLaunch = false
     )
 )
+StackbricksComponent(
+    service,
+    modifier = Modifier,
+    trigger = object : StackbricksEventTrigger() {
+        override fun onChannelChanged(isTestChannel: Boolean) { }
+
+        override fun onCheckUpdate(isTestChannel: Boolean) { }
+
+        override fun onCheckUpdateOnLaunchChanged(isChecked: Boolean) { }
+
+        override fun onDownloadPackage() { }
+
+        override fun onInstallPackage(isTestChannel: Boolean, versionData: StackbricksVersionData) { }
+    }
+)
 ```
-
-### 对于其他框架
-
-- 使用`StackbricksService`获取服务。
-
-## 实现逻辑
-
-### `.getLatestPackageInfo()`
-
-- 通过`StackbricksPackageProvider`获取最新的包信息（`messageProvider.getLatestVersionData()`），返回一个`StackbricksVersionData`接口类。
-
-### `.isNeedUpdate()`
-
-- 进行版本比较，判断是否需要更新。
-
-### `.downloadPackage(StackbricksVersionData, MutableFloatState?)`
-
-- 下载安装包，下载进度将通过`MutableFloatState`传递。
-
-### `.installPackage()`
-
-- 发送`Intent`，调用`FileProvider`安装安装包。
 
 ## Providers
 
