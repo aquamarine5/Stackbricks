@@ -229,7 +229,7 @@ fun StackbricksComponent(
                 isForceInstallDialog = true
             }
         }
-        if (isForceInstallDialog) {
+        if (isForceInstallDialog && service.stackbricksPolicy?.isForceInstallValueCallback != false) {
             AlertDialog(
                 onDismissRequest = { },
                 confirmButton = {
@@ -414,7 +414,7 @@ fun StackbricksComponent(
                     }
                 }
                 AnimatedVisibility(
-                    service.internalVersionData != null && (status ==StackbricksStatus.STATUS_BETA_AVAILABLE||status==StackbricksStatus.STATUS_NEWER_VERSION),
+                    service.internalVersionData != null && (status == StackbricksStatus.STATUS_BETA_AVAILABLE || status == StackbricksStatus.STATUS_NEWER_VERSION),
                     enter = expandVertically(),
                     exit = shrinkVertically()
                 ) {
@@ -605,11 +605,11 @@ fun StackbricksComponent(
                                     isCheckUpdateOnLaunch = it
                                     trigger?.onCheckUpdateOnLaunchChanged(it)
                                 },
-                                enabled = service.buildConfig?.isAllowedToDisableCheckUpdateOnLaunch
+                                enabled = service.stackbricksPolicy?.isAllowedToDisableCheckUpdateOnLaunch
                                     ?: true
                             )
                         }
-                        if (service.buildConfig?.isAllowedToDisableCheckUpdateOnLaunch == false) {
+                        if (service.stackbricksPolicy?.isAllowedToDisableCheckUpdateOnLaunch == false) {
                             Text(
                                 "开发者设置了应用更新策略，不允许修改关闭启动时检查更新值。",
                                 color = Color(0xFFF34718)

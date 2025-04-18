@@ -2,11 +2,8 @@ package org.aquamarine5.brainspark.stackbricks
 
 import android.content.Context
 import android.util.Log
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.core.content.pm.PackageInfoCompat
 
 open class StackbricksService(
@@ -14,7 +11,7 @@ open class StackbricksService(
     private val messageProvider: StackbricksMessageProvider,
     private val packageProvider: StackbricksPackageProvider,
     val state: StackbricksState,
-    val buildConfig: ApplicationBuildConfig? = null,
+    val stackbricksPolicy: StackbricksPolicy? = null,
     private val checkCurrentVersionIsTest: (String, Long) -> Boolean = { versionName, _ ->
         versionName.contains("beta", true) ||
                 versionName.contains("alpha", true) ||
@@ -59,8 +56,8 @@ open class StackbricksService(
     }
 
     open fun getCurrentVersion(): Long {
-        if (buildConfig?.versionCode != null)
-            return buildConfig.versionCode
+        if (stackbricksPolicy?.versionCode != null)
+            return stackbricksPolicy.versionCode
         return PackageInfoCompat.getLongVersionCode(
             context.packageManager.getPackageInfo(
                 context.packageName,
@@ -70,8 +67,8 @@ open class StackbricksService(
     }
 
     open fun getCurrentVersionName(): String? {
-        if (buildConfig?.versionName != null)
-            return buildConfig.versionName
+        if (stackbricksPolicy?.versionName != null)
+            return stackbricksPolicy.versionName
         return context.packageManager.getPackageInfo(
             context.packageName,
             0

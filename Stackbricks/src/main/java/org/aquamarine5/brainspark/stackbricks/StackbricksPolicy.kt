@@ -6,8 +6,9 @@
 
 package org.aquamarine5.brainspark.stackbricks
 
-data class ApplicationBuildConfig(
-    val versionName: String?=null,
-    val versionCode: Long?=null,
-    val isAllowedToDisableCheckUpdateOnLaunch: Boolean = true
+data class StackbricksPolicy(
+    val versionName: String? = null,
+    val versionCode: Long? = null,
+    val isAllowedToDisableCheckUpdateOnLaunch: Boolean = true,
+    val isForceInstallValueCallback: Boolean = true,
 )
