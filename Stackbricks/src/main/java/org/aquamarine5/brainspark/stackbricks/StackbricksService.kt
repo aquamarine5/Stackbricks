@@ -84,10 +84,10 @@ open class StackbricksService(
 
     open suspend fun isBetaVersionAvailable(): StackbricksVersionData? {
         val latestTest = getManifest().latestTest
-        state.tmpVersion.value = latestTest
         isNeedUpdate()?.let {
             return it
         }
+        state.tmpVersion.value = latestTest
         return if (getCurrentVersion() < latestTest.versionCode) latestTest else null
     }
 
