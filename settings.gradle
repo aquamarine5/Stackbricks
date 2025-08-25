@@ -7,6 +7,9 @@ pluginManagement {
                 username = "aquamarine5"
                 password = System.getenv("GHP_TOKEN")
             }
+            content{
+                includeGroupByRegex("org\\.aquamarine5\\.brainspark.*")
+            }
         }
         google {
             content {
@@ -30,6 +33,9 @@ dependencyResolutionManagement {
             credentials {
                 username = "aquamarine5"
                 password = System.getenv("GHP_TOKEN")
+            }
+            content{
+                includeGroupByRegex("org\\.aquamarine5\\.brainspark.*")
             }
         }
         google {
