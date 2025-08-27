@@ -31,7 +31,8 @@ data class StackbricksState(
                     it.tmpVersion.value?.changelog,
                     it.tmpVersion.value?.forceInstall,
                     it.tmpVersion.value?.releaseDate?.epochSecond,
-                    it.tmpVersion.value?.packageName
+                    it.tmpVersion.value?.packageName,
+                    it.tmpVersion.value?.forceInstallLessVersion
                 )
             },
             restore = {
@@ -51,6 +52,7 @@ data class StackbricksState(
                         it[10] as String,
                         it[11] as Boolean,
                         it[9] as Boolean,
+                        it[14] as Int
                     ))else mutableStateOf(null)
                 )
             }

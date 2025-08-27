@@ -37,7 +37,7 @@ class QiniuPackageProvider(
                 if (!response.isSuccessful) {
                     throw IllegalStateException("Unexpected response code: ${response.code}")
                 }
-                val body = response.body ?: throw IllegalStateException("Empty response body")
+                val body = response.body
                 val progressedBody =
                     ProgressedResponseBody(body) { bytesRead, contentLength, isDone ->
                         downloadProgress?.value =

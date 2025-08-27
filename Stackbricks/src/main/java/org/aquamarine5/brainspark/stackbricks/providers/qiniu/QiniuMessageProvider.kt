@@ -17,7 +17,7 @@ class QiniuMessageProvider(
 ) : StackbricksMessageProvider {
     companion object {
         const val LOGTAG = "QiniuMessageProvider"
-        const val SUPPORTED_PARSE_CONFIG_VERSION = 2
+        const val SUPPORTED_PARSE_CONFIG_VERSION = 3
     }
 
     override suspend fun getManifest(): QiniuManifest {
@@ -33,7 +33,7 @@ class QiniuMessageProvider(
                 if (!response.isSuccessful) {
                     throw IllegalStateException("Unexpected response code: ${response.request.url},${response.code}")
                 }
-                val body = response.body ?: throw IllegalStateException("Empty response body")
+                val body = response.body
                 val baseJson = JSONObject.parseObject(body.string())
                 val version=baseJson.getIntValue("manifestVersion")
                 val isVersionSupported =
@@ -62,7 +62,8 @@ class QiniuMessageProvider(
                                 getString("packageName"),
                                 getString("changelog"),
                                 getBoolean("forceInstall"),
-                                isStable = true
+                                true,
+                                getInteger("forceInstallLessVersion")
                             )
                         },
                         baseJson.getJSONObject("latestTest").run {
@@ -74,7 +75,8 @@ class QiniuMessageProvider(
                                 getString("packageName"),
                                 getString("changelog"),
                                 getBoolean("forceInstall"),
-                                isStable = false
+                                false,
+                                getInteger("forceInstallLessVersion")
                             )
                         },
                         version

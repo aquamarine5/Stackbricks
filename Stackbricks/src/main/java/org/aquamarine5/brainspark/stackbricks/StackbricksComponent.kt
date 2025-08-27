@@ -179,7 +179,7 @@ fun StackbricksComponent(
                             Icon(
                                 painterResource(R.drawable.ic_triangle_alert),
                                 contentDescription = "Alert",
-                                tint = MaterialTheme.colorScheme.primaryContainer
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
@@ -217,7 +217,7 @@ fun StackbricksComponent(
                             Icon(
                                 painterResource(R.drawable.ic_badge_info),
                                 contentDescription = "Alert",
-                                tint = MaterialTheme.colorScheme.primaryContainer
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
@@ -232,7 +232,7 @@ fun StackbricksComponent(
                 }
             }
             LaunchedEffect(service.internalVersionData) {
-                if (service.internalVersionData?.forceInstall == true) {
+                if (service.internalVersionData?.let { it.forceInstallLessVersion > service.getCurrentVersion() } == true) {
                     isForceInstallDialog = true
                 }
             }

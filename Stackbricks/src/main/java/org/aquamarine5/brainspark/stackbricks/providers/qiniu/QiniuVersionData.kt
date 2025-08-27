@@ -12,6 +12,7 @@ data class QiniuVersionData(
     override val releaseDate: Instant,
     override val packageName: String,
     override val changelog: String,
+    @Deprecated("Use forceInstallLessVersion instead, deprecated in manifestVersion>=3", ReplaceWith("forceInstallLessVersion>versionCode"))
     override val forceInstall: Boolean,
-    override val isStable: Boolean
+    override val isStable: Boolean, override val forceInstallLessVersion: Int
 ) : StackbricksVersionData
