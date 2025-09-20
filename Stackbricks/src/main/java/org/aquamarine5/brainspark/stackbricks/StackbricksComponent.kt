@@ -89,9 +89,9 @@ fun StackbricksComponent(
         StackbricksStatus.STATUS_CLICK_INSTALL to Color(236, 138, 164),
         StackbricksStatus.STATUS_INTERNAL_ERROR to Color(238, 72, 102),
         StackbricksStatus.STATUS_NETWORK_ERROR to Color(238, 72, 102),
-        StackbricksStatus.STATUS_DOWNLOADING to Color(248, 223, 112),
-        StackbricksStatus.STATUS_BETA_AVAILABLE to Color(248, 223, 112),
-        StackbricksStatus.STATUS_NEWER_VERSION to Color(248, 223, 112),
+        StackbricksStatus.STATUS_DOWNLOADING to Color(0xFFFCC307),
+        StackbricksStatus.STATUS_BETA_AVAILABLE to Color(0xFFFCC307),
+        StackbricksStatus.STATUS_NEWER_VERSION to Color(0xFFFCC307),
         StackbricksStatus.STATUS_NEWEST to Color(69, 210, 154)
     )
     val tipsTextMatchMap = mapOf(
