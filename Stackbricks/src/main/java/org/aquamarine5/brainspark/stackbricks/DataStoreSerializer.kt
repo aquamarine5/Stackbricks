@@ -28,7 +28,7 @@ object DataStoreSerializer : Serializer<StackbricksDataStore> {
         t.writeTo(output)
 }
 
-val Context.stackbricksDataStore:DataStore<StackbricksDataStore> by dataStore(
+val Context.stackbricksDataStore: DataStore<StackbricksDataStore> by dataStore(
     fileName = "stackbricks_datastore.pb",
     serializer = DataStoreSerializer,
     corruptionHandler = ReplaceFileCorruptionHandler { DataStoreSerializer.defaultValue }

@@ -6,4 +6,4 @@ data class QiniuManifest(
     override val latestStable: QiniuVersionData,
     override val latestTest: QiniuVersionData,
     override val manifestVersion: Int
-):StackbricksManifest
+) : StackbricksManifest

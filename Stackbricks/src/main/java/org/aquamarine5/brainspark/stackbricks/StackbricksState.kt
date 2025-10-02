@@ -43,17 +43,19 @@ data class StackbricksState(
                         File(it[3] as String),
                         it[4] as Boolean
                     ) else null,
-                    if(it[5] as Boolean) mutableStateOf(QiniuVersionData(
-                        it[6] as Int,
-                        it[7] as String,
-                        it[8] as String,
-                        Instant.ofEpochSecond(it[12] as Long),
-                        it[13] as String,
-                        it[10] as String,
-                        it[11] as Boolean,
-                        it[9] as Boolean,
-                        it[14] as Int
-                    ))else mutableStateOf(null)
+                    if (it[5] as Boolean) mutableStateOf(
+                        QiniuVersionData(
+                            it[6] as Int,
+                            it[7] as String,
+                            it[8] as String,
+                            Instant.ofEpochSecond(it[12] as Long),
+                            it[13] as String,
+                            it[10] as String,
+                            it[11] as Boolean,
+                            it[9] as Boolean,
+                            it[14] as Int
+                        )
+                    ) else mutableStateOf(null)
                 )
             }
         )
