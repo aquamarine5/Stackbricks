@@ -673,7 +673,9 @@ fun rememberStackbricksStatus(
 @Preview
 @Composable
 private fun Preview() {
-    val qiniuConfiguration = QiniuConfiguration("http://localhost:8080", "/config.json")
+    val qiniuConfiguration = QiniuConfiguration(possibleConfigurations = listOf(
+        "localhost" to "stackbricks_manifest_v3.json"
+    ))
     StackbricksComponent(
         StackbricksService(
             LocalContext.current, QiniuMessageProvider(qiniuConfiguration),
