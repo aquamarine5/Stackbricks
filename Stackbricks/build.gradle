@@ -1,10 +1,16 @@
+/*
+ * Copyright (c) 2025, @aquamarine5 (@海蓝色的咕咕鸽). All Rights Reserved.
+ * Author: aquamarine5@163.com (Github: https://github.com/aquamarine5) and Brainspark (previously RenegadeCreation)
+ * Repository: https://github.com/aquamarine5/Stackbricks
+ */
+
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
     id 'maven-publish'
     alias(libs.plugins.kotlin.compose)
     id("com.google.protobuf") version "0.9.5"
-    id("org.jetbrains.kotlin.plugin.serialization") version "2.2.20"
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.2.21"
 }
 
 protobuf {
@@ -51,7 +57,7 @@ android {
         }
     }
     namespace 'org.aquamarine5.brainspark.stackbricks'
-    compileSdk 35
+    compileSdk 36
 
     defaultConfig {
         minSdk 26

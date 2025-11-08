@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2025, @aquamarine5 (@海蓝色的咕咕鸽). All Rights Reserved.
+ * Author: aquamarine5@163.com (Github: https://github.com/aquamarine5) and Brainspark (previously RenegadeCreation)
+ * Repository: https://github.com/aquamarine5/Stackbricks
+ */
+
 package org.aquamarine5.brainspark.stackbricks
 
 import androidx.compose.animation.AnimatedVisibility
@@ -153,7 +159,7 @@ fun StackbricksComponent(
             Column {
                 Spacer(modifier = Modifier.height(30.dp))
                 AnimatedVisibility(
-                    isCurrentTestVersion.not() && service.internalVersionData?.isStable == false && buttonSize > 40.dp.value,
+                    isBetaChannel && isCurrentTestVersion.not() && buttonSize > 40.dp.value,
                     enter = expandVertically() + fadeIn(initialAlpha = 0f),
                     exit = shrinkVertically()
                 ) {
@@ -168,7 +174,7 @@ fun StackbricksComponent(
                             } - 60.dp)
                             .zIndex(0f)
                     ) {
-                        Spacer(modifier = Modifier.height(23.dp))
+                        Spacer(modifier = Modifier.height(25.dp))
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -179,7 +185,7 @@ fun StackbricksComponent(
                             Icon(
                                 painterResource(R.drawable.ic_triangle_alert),
                                 contentDescription = "Alert",
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                tint = Color.Black
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
@@ -206,7 +212,7 @@ fun StackbricksComponent(
                             } - 31.dp)
                             .zIndex(0f)
                     ) {
-                        Spacer(modifier = Modifier.height(23.dp))
+                        Spacer(modifier = Modifier.height(25.dp))
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -217,7 +223,7 @@ fun StackbricksComponent(
                             Icon(
                                 painterResource(R.drawable.ic_badge_info),
                                 contentDescription = "Alert",
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                tint = Color.Black
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
@@ -476,11 +482,17 @@ fun StackbricksComponent(
                             },
                             text = {
                                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                                    Text("更新日志", fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    service.internalVersionData?.changelog?.let {
-                                        Text(it)
+                                    var changelog by remember { mutableStateOf("") }
+                                    LaunchedEffect(Unit) {
+                                        changelog = service.getCurrentChangelog()
                                     }
+                                    Text(
+                                        "更新日志",
+                                        fontSize = 17.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(changelog)
                                 }
                             }
                         )
@@ -509,24 +521,19 @@ fun StackbricksComponent(
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            AnimatedVisibility(
-                                service.internalVersionData != null && (status == StackbricksStatus.STATUS_BETA_AVAILABLE || status == StackbricksStatus.STATUS_NEWER_VERSION) && service.internalVersionData?.changelog.isNullOrBlank()
-                                    .not(),
-                                enter = fadeIn(),
-                                exit = fadeOut()
-                            ) {
-                                IconButton(
-                                    onClick = {
-                                        isShowChangelogDialog = true
-                                    }
-                                ) {
-                                    Icon(
-                                        painterResource(R.drawable.ic_file_text),
-                                        null,
-                                        modifier = Modifier.size(24.dp)
-                                    )
+
+                            IconButton(
+                                onClick = {
+                                    isShowChangelogDialog = true
                                 }
+                            ) {
+                                Icon(
+                                    painterResource(R.drawable.ic_file_text),
+                                    null,
+                                    modifier = Modifier.size(24.dp)
+                                )
                             }
+
                             Icon(
                                 painterResource(R.drawable.ic_settings),
                                 null,
@@ -638,7 +645,7 @@ fun StackbricksComponent(
                             }
                             if (service.stackbricksPolicy?.isAllowedToDisableCheckUpdateOnLaunch == false) {
                                 Text(
-                                    "开发者设置了应用更新策略，不允许修改启动时检查更新值。",
+                                    "开发者设置了应用更新策略，不允许修改启动时检查更新的值。",
                                     color = Color(0xFFF34718)
                                 )
                             }
@@ -673,9 +680,11 @@ fun rememberStackbricksStatus(
 @Preview
 @Composable
 private fun Preview() {
-    val qiniuConfiguration = QiniuConfiguration(possibleConfigurations = listOf(
-        "localhost" to "stackbricks_manifest_v3.json"
-    ))
+    val qiniuConfiguration = QiniuConfiguration(
+        possibleConfigurations = listOf(
+            "localhost" to "stackbricks_manifest_v3.json"
+        )
+    )
     StackbricksComponent(
         StackbricksService(
             LocalContext.current, QiniuMessageProvider(qiniuConfiguration),

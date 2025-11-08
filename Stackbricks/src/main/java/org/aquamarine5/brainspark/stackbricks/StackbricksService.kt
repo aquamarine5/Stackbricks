@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2025, @aquamarine5 (@海蓝色的咕咕鸽). All Rights Reserved.
+ * Author: aquamarine5@163.com (Github: https://github.com/aquamarine5) and Brainspark (previously RenegadeCreation)
+ * Repository: https://github.com/aquamarine5/Stackbricks
+ */
+
 package org.aquamarine5.brainspark.stackbricks
 
 import android.content.Context
@@ -45,6 +51,15 @@ open class StackbricksService(
         } else {
             _manifest!!
         }
+    }
+
+    suspend fun getCurrentChangelog():String{
+        isNeedUpdate()?.let {
+            return it.changelog
+        }
+        if(checkCurrentIsTestChannel())
+            return getManifest().latestTest.changelog
+        return getManifest().latestStable.changelog
     }
 
     open suspend fun getPackage(): StackbricksPackageFile {

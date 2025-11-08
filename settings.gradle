@@ -1,14 +1,20 @@
+/*
+ * Copyright (c) 2025, @aquamarine5 (@海蓝色的咕咕鸽). All Rights Reserved.
+ * Author: aquamarine5@163.com (Github: https://github.com/aquamarine5) and Brainspark (previously RenegadeCreation)
+ * Repository: https://github.com/aquamarine5/Stackbricks
+ */
+
 pluginManagement {
     repositories {
         maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/aquamarine5/stackbricks-gradle-plugin")
+            url ="https://maven.pkg.github.com/aquamarine5/stackbricks-gradle-plugin"
             credentials {
                 username = "aquamarine5"
                 password = System.getenv("GHP_TOKEN")
             }
             content{
-                includeGroupByRegex("org\\.aquamarine5\\.brainspark.*")
+                includeGroup("org.aquamarine5.brainspark")
+                includeGroup("org.aquamarine5.brainspark.stackbricks-gradle-plugin")
             }
         }
         google {
@@ -19,8 +25,6 @@ pluginManagement {
             }
         }
         mavenCentral()
-        maven { url 'https://maven.aliyun.com/repository/google' }
-        maven { url 'https://maven.aliyun.com/repository/public' }
         gradlePluginPortal()
     }
 }
@@ -28,25 +32,21 @@ dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/aquamarine5/stackbricks-gradle-plugin")
+            url ="https://maven.pkg.github.com/aquamarine5/Stackbricks"
             credentials {
                 username = "aquamarine5"
                 password = System.getenv("GHP_TOKEN")
             }
             content{
-                includeGroupByRegex("org\\.aquamarine5\\.brainspark.*")
+                includeModule("org.aquamarine5.brainspark","stackbricks")
             }
         }
-        google {
-            content {
-                includeGroupByRegex("com\\.android.*")
-                includeGroupByRegex("com\\.google.*")
-                includeGroupByRegex("androidx.*")
-            }
+        google()
+
+        maven {
+            url = uri("https://jitpack.io")
         }
-        maven { url 'https://maven.aliyun.com/repository/google' }
-        maven { url 'https://maven.aliyun.com/repository/public' }
+
         mavenCentral()
     }
 }
