@@ -28,12 +28,13 @@ protobuf {
         }
     }
 }
+var stackbricksVersion = "2.4.2"
 publishing {
     publications {
         release(MavenPublication) {
             groupId = 'org.aquamarine5.brainspark'
             artifactId = 'stackbricks'
-            version = '2.4.1'
+            version = stackbricksVersion
             afterEvaluate {
                 from components.release
             }
@@ -51,6 +52,9 @@ publishing {
     }
 }
 android {
+    buildFeatures {
+        buildConfig = true
+    }
     publishing {
         singleVariant('release') {
             withSourcesJar()
@@ -61,9 +65,9 @@ android {
 
     defaultConfig {
         minSdk 26
-
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
+        buildConfigField "String", "stackbricksVersion", "\"${stackbricksVersion}\""
     }
 
     buildTypes {
