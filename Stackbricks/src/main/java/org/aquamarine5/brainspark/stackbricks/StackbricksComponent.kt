@@ -465,7 +465,7 @@ fun StackbricksComponent(
                                     append("：")
                                     withStyle(fontGilroy) {
                                         val message = service.internalVersionData!!
-                                        append("${message.versionName}(${message.versionCode})")
+                                        append("${message.versionName} (${message.versionCode})")
                                     }
                                 },
                                 fontSize = 12.sp
@@ -510,7 +510,7 @@ fun StackbricksComponent(
                                 append(" 提供。\n")
                                 append("当前程序版本：")
                                 withStyle(fontGilroy) {
-                                    append("${service.getCurrentVersionName()}(${service.getCurrentVersion()})")
+                                    append("${service.getCurrentVersionName()} (${service.getCurrentVersion()})")
                                 }
                             },
                             fontSize = 12.sp,
