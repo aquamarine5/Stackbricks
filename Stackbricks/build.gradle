@@ -28,7 +28,7 @@ protobuf {
         }
     }
 }
-var stackbricksVersion = "2.4.3"
+var stackbricksVersion = "2.4.4"
 publishing {
     publications {
         release(MavenPublication) {

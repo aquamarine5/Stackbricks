@@ -28,7 +28,6 @@ open class StackbricksService(
 
     val internalVersionData by state.tmpVersion
 
-    @Stable
     open fun checkCurrentIsTestChannel(): Boolean {
         val versionName = getCurrentVersionName()
         val versionCode = getCurrentVersion()
