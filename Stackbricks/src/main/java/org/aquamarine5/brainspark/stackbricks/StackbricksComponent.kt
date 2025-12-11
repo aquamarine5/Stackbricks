@@ -675,9 +675,10 @@ fun StackbricksComponent(
                             )
                         }
                         Text(
-                            "Stackbricks ${BuildConfig.stackbricksVersion}, by @aquamarine5",
+                            "Stackbricks ${BuildConfig.stackbricksVersion}, by @aquamarine5.",
                             fontSize = 12.sp,
-                            modifier = Modifier.padding(top = 10.dp)
+                            modifier = Modifier.padding(top = 10.dp),
+                            color = Color.Gray
                         )
                     }
                 })

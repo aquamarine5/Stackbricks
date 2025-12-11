@@ -1,5 +1,5 @@
 [versions]
-agp = "8.13.1"
+agp = "8.13.2"
 compiler = "1.5.15"
 datastore = "1.2.0"
 fastjson2 = "2.0.60"
@@ -13,12 +13,12 @@ kotlinxSerializationJson = "1.9.0"
 material = "1.13.0"
 okhttp = "5.3.2"
 okio = "3.16.4"
-protobufJavalite = "4.33.1"
-uiGraphicsAndroid = "1.9.5"
-foundationAndroid = "1.9.5"
+protobufJavalite = "4.33.2"
+uiGraphicsAndroid = "1.10.0"
+foundationAndroid = "1.10.0"
 material3Android = "1.4.0"
-uiToolingPreviewAndroid = "1.9.5"
-uiTooling = "1.9.5"
+uiToolingPreviewAndroid = "1.10.0"
+uiTooling = "1.10.0"
 
 [libraries]
 androidx-compiler = { module = "androidx.compose.compiler:compiler", version.ref = "compiler" }
