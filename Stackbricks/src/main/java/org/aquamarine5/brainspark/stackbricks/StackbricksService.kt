@@ -11,6 +11,7 @@ import android.util.Log
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.core.content.pm.PackageInfoCompat
+import kotlinx.coroutines.delay
 
 open class StackbricksService(
     private val context: Context,
@@ -42,8 +43,8 @@ open class StackbricksService(
         }
     }
 
-    open suspend fun getManifest(): StackbricksManifest {
-        return if (_manifest == null) {
+    open suspend fun getManifest(dismissCache: Boolean = false): StackbricksManifest {
+        return if (_manifest == null || dismissCache) {
             messageProvider.getManifest().apply {
                 _manifest = this
             }
@@ -52,11 +53,11 @@ open class StackbricksService(
         }
     }
 
-    suspend fun getCurrentChangelog():String{
+    suspend fun getCurrentChangelog(): String {
         isNeedUpdate()?.let {
             return it.changelog
         }
-        if(checkCurrentIsTestChannel())
+        if (checkCurrentIsTestChannel())
             return getManifest().latestTest.changelog
         return getManifest().latestStable.changelog
     }
@@ -89,24 +90,25 @@ open class StackbricksService(
         ).versionName
     }
 
-    open suspend fun isNeedUpdate(): StackbricksVersionData? {
+    open suspend fun isNeedUpdate(dismissCache: Boolean = false): StackbricksVersionData? {
         val currentVersion = getCurrentVersion()
-        val updateMessage = getManifest().latestStable
+        val updateMessage = getManifest(dismissCache).latestStable
         state.tmpVersion.value = updateMessage
+        if (dismissCache) delay(300)
         return if (currentVersion < updateMessage.versionCode) updateMessage else null
     }
 
-    open suspend fun isBetaVersionAvailable(): StackbricksVersionData? {
-        val latestTest = getManifest().latestTest
+    open suspend fun isBetaVersionAvailable(dismissCache: Boolean = false): StackbricksVersionData? {
+        val latestTest = getManifest(dismissCache).latestTest
         isNeedUpdate()?.let {
             return it
         }
         state.tmpVersion.value = latestTest
+        if (dismissCache) delay(300)
         return if (getCurrentVersion() < latestTest.versionCode) latestTest else null
     }
 
     open suspend fun downloadPackage(
-        isStable: Boolean = true,
         withProgress: Boolean = true
     ): StackbricksPackageFile {
         if (state.tmpVersion.value == null)
@@ -114,14 +116,14 @@ open class StackbricksService(
         return packageProvider.downloadPackage(
             context,
             state.tmpVersion.value!!,
-            state.downloadingProgress
+            if (withProgress) state.downloadingProgress else null
         ).apply {
             state.tmpPackage = this
         }
     }
 
-    open suspend fun isNewerVersion(): Boolean {
-        return isNeedUpdate() != null
+    open suspend fun isNewerVersion(dismissCache: Boolean = false): Boolean {
+        return isNeedUpdate(dismissCache) != null
     }
 
     open suspend fun getLatestPackageInfo(): StackbricksVersionData =

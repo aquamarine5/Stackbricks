@@ -51,10 +51,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.boundsInParent
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -127,6 +129,8 @@ fun StackbricksComponent(
     }
     val fontGilroy = SpanStyle(fontSize = 13.sp, fontFamily = FontFamily(Font(R.font.gilroy)))
     val coroutineScope = rememberCoroutineScope()
+    val hapticFeedback = LocalHapticFeedback.current
+    var isDownloading = remember { false }
     var buttonSize by remember { mutableFloatStateOf(30.dp.value) }
     var isBetaChannel by remember { mutableStateOf(false) }
     var isCheckUpdateOnLaunch by remember { mutableStateOf(true) }
@@ -307,8 +311,35 @@ fun StackbricksComponent(
         Button(
             onClick = {
                 runCatching {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.ContextClick)
                     when (status) {
-                        StackbricksStatus.STATUS_NEWEST,
+                        StackbricksStatus.STATUS_NEWEST -> {
+                            coroutineScope.launch {
+                                runCatching {
+                                    status = StackbricksStatus.STATUS_CHECKING
+                                    trigger?.onCheckUpdate(isTestChannel = false)
+                                    status = if (isBetaChannel)
+                                        if (service.isBetaVersionAvailable(true) != null)
+                                            StackbricksStatus.STATUS_BETA_AVAILABLE
+                                        else
+                                            StackbricksStatus.STATUS_NEWEST
+                                    else
+                                        if (service.isNewerVersion(true))
+                                            StackbricksStatus.STATUS_NEWER_VERSION
+                                        else StackbricksStatus.STATUS_NEWEST
+                                }.onFailure {
+                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.Reject)
+                                    if (it.isWebException()) {
+                                        status = StackbricksStatus.STATUS_NETWORK_ERROR
+                                        errorTips = "网络错误：${it.localizedMessage}"
+                                    } else {
+                                        status = StackbricksStatus.STATUS_INTERNAL_ERROR
+                                        errorTips = "内部错误：${it.localizedMessage}"
+                                    }
+                                }
+                            }
+                        }
+
                         StackbricksStatus.STATUS_START -> {
                             coroutineScope.launch {
                                 runCatching {
@@ -324,6 +355,7 @@ fun StackbricksComponent(
                                             StackbricksStatus.STATUS_NEWER_VERSION
                                         else StackbricksStatus.STATUS_NEWEST
                                 }.onFailure {
+                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.Reject)
                                     if (it.isWebException()) {
                                         status = StackbricksStatus.STATUS_NETWORK_ERROR
                                         errorTips = "网络错误：${it.localizedMessage}"
@@ -345,9 +377,14 @@ fun StackbricksComponent(
                             coroutineScope.launch {
                                 runCatching {
                                     downloadProgress = 0f
-                                    service.downloadPackage()
-                                    trigger?.onDownloadPackage()
+                                    if (isDownloading.not()) {
+                                        isDownloading = true
+                                        trigger?.onDownloadPackage()
+                                        service.downloadPackage()
+                                        isDownloading = false
+                                    }
                                 }.onFailure {
+                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.Reject)
                                     if (it.isWebException()) {
                                         status = StackbricksStatus.STATUS_NETWORK_ERROR
                                         errorTips = "网络错误：${it.localizedMessage}"
@@ -371,6 +408,7 @@ fun StackbricksComponent(
                                 }.onSuccess {
                                     status = StackbricksStatus.STATUS_NEWEST
                                 }.onFailure {
+                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.Reject)
                                     status = StackbricksStatus.STATUS_INTERNAL_ERROR
                                     errorTips = "安装失败"
                                 }
@@ -388,6 +426,7 @@ fun StackbricksComponent(
                                         else StackbricksStatus.STATUS_NEWEST
                                     trigger?.onCheckUpdate(isTestChannel = false)
                                 }.onFailure {
+                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.Reject)
                                     if (it.isWebException()) {
                                         status = StackbricksStatus.STATUS_NETWORK_ERROR
                                         errorTips = "网络错误：${it.localizedMessage}"
@@ -400,6 +439,7 @@ fun StackbricksComponent(
                         }
                     }
                 }.onFailure {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.Reject)
                     if (it.isWebException()) {
                         status = StackbricksStatus.STATUS_NETWORK_ERROR
                         errorTips = "网络错误：${it.localizedMessage}"
@@ -508,6 +548,7 @@ fun StackbricksComponent(
                                     runCatching {
                                         changelog = service.getCurrentChangelog()
                                     }.onFailure {
+                                        hapticFeedback.performHapticFeedback(HapticFeedbackType.Reject)
                                         changelog = "获取更新日志失败：${it.localizedMessage}"
                                     }
                                 }
