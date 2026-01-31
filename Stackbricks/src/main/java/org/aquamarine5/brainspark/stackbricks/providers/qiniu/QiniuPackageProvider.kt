@@ -20,6 +20,9 @@ import org.aquamarine5.brainspark.stackbricks.StackbricksPackageFile
 import org.aquamarine5.brainspark.stackbricks.StackbricksPackageProvider
 import org.aquamarine5.brainspark.stackbricks.StackbricksVersionData
 import java.io.File
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 class QiniuPackageProvider(
     private val configuration: QiniuConfiguration
@@ -31,7 +34,8 @@ class QiniuPackageProvider(
     override suspend fun downloadPackage(
         context: Context,
         versionData: StackbricksVersionData,
-        downloadProgress: MutableState<Float?>?
+        downloadProgress: MutableState<Float?>?,
+        continuation: Continuation<StackbricksPackageFile>?
     ): StackbricksPackageFile {
         configuration.possibleConfigurations.forEach {
             val req = Request.Builder()
@@ -59,10 +63,15 @@ class QiniuPackageProvider(
                     file.sink().buffer().use { sink ->
                         sink.writeAll(progressedBody.source())
                     }
-                    return@withContext StackbricksPackageFile(file, versionData.isStable)
+
+                    return@withContext StackbricksPackageFile(file, versionData.isStable).apply {
+                        continuation?.resume(this)
+                    }
                 }
             }
         }
-        throw NoAvailableManifestException()
+        throw NoAvailableManifestException().apply {
+            continuation?.resumeWithException(this)
+        }
     }
 }

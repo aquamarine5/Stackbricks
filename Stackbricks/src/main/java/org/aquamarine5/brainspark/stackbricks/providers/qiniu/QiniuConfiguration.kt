@@ -10,7 +10,7 @@ import okhttp3.OkHttpClient
 
 data class QiniuConfiguration(
     @Deprecated("Use possibleConfigurations instead")
-    val host: String="",
+    val host: String = "",
     @Deprecated("Use possibleConfigurations instead")
     val configFilePath: String = "stackbricks_config_v1.json",
     val isHttps: Boolean = false,

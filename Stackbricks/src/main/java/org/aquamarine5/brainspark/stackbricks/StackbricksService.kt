@@ -12,6 +12,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.core.content.pm.PackageInfoCompat
 import kotlinx.coroutines.delay
+import kotlin.coroutines.Continuation
 
 open class StackbricksService(
     private val context: Context,
@@ -43,9 +44,9 @@ open class StackbricksService(
         }
     }
 
-    open suspend fun getManifest(dismissCache: Boolean = false): StackbricksManifest {
+    open suspend fun getManifest(dismissCache: Boolean = false,continuation: Continuation<StackbricksManifest>?=null): StackbricksManifest {
         return if (_manifest == null || dismissCache) {
-            messageProvider.getManifest().apply {
+            messageProvider.getManifest(continuation).apply {
                 _manifest = this
             }
         } else {
@@ -109,14 +110,16 @@ open class StackbricksService(
     }
 
     open suspend fun downloadPackage(
-        withProgress: Boolean = true
+        withProgress: Boolean = true,
+        continuation: Continuation<StackbricksPackageFile>?=null
     ): StackbricksPackageFile {
         if (state.tmpVersion.value == null)
             throw NullPointerException("Version data is null, please call isNeedUpdate() or isBetaVersionAvailable() first")
         return packageProvider.downloadPackage(
             context,
             state.tmpVersion.value!!,
-            if (withProgress) state.downloadingProgress else null
+            if (withProgress) state.downloadingProgress else null,
+            continuation
         ).apply {
             state.tmpPackage = this
         }

@@ -18,16 +18,20 @@ import org.aquamarine5.brainspark.stackbricks.StackbricksUnsupportedConfigExcept
 import org.aquamarine5.brainspark.stackbricks.StackbricksVersionData
 import java.net.URL
 import java.time.Instant
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 class QiniuMessageProvider(
     private val configuration: QiniuConfiguration
 ) : StackbricksMessageProvider {
     companion object {
         const val LOGTAG = "QiniuMessageProvider"
-        const val SUPPORTED_PARSE_CONFIG_VERSION = 3
+        const val SUPPORTED_PARSE_CONFIG_VERSION = 2
+        const val CURRENT_LATEST_PARSE_CONFIG_VERSION = 3
     }
 
-    override suspend fun getManifest(): QiniuManifest {
+    override suspend fun getManifest(continuation: Continuation<QiniuManifest>?): QiniuManifest {
         configuration.possibleConfigurations.forEach {
             val configUrl =
                 URL(if (configuration.isHttps) "https" else "http" + "://${it.first}/${it.second}")
@@ -47,18 +51,20 @@ class QiniuMessageProvider(
                         val baseJson = JSONObject.parseObject(body.string())
                         val version = baseJson.getIntValue("manifestVersion")
                         val isVersionSupported =
-                            SUPPORTED_PARSE_CONFIG_VERSION >= version
+                            CURRENT_LATEST_PARSE_CONFIG_VERSION >= version
                         if (!isVersionSupported) {
                             Log.w(
                                 LOGTAG,
-                                "Unsupported config version: $version, maximum supported: $SUPPORTED_PARSE_CONFIG_VERSION"
+                                "Unsupported config version: $version, maximum supported: $CURRENT_LATEST_PARSE_CONFIG_VERSION"
                             )
                         } else {
-                            if (version == 1) {
+                            if (version <= 1) {
                                 throw StackbricksUnsupportedConfigException(
                                     version,
-                                    1
-                                )
+                                    CURRENT_LATEST_PARSE_CONFIG_VERSION
+                                ).apply {
+                                    continuation?.resumeWithException(this)
+                                }
                             }
                         }
                         return@use QiniuManifest(
@@ -93,10 +99,14 @@ class QiniuMessageProvider(
                     }
                 }
             }.onSuccess { manifest ->
-                return manifest
+                return manifest.apply {
+                    continuation?.resume(this)
+                }
             }
         }
-        throw NoAvailableManifestException()
+        throw NoAvailableManifestException().apply {
+            continuation?.resumeWithException(this)
+        }
     }
 
     @Deprecated(

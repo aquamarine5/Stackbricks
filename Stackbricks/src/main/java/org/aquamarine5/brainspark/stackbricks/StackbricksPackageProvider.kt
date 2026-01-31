@@ -10,11 +10,13 @@ import android.content.Context
 import androidx.compose.runtime.MutableFloatState
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
+import kotlin.coroutines.Continuation
 
 interface StackbricksPackageProvider {
     suspend fun downloadPackage(
         context: Context,
         versionData: StackbricksVersionData,
-        downloadProgress: MutableState<Float?>? = null
+        downloadProgress: MutableState<Float?>? = null,
+        continuation: Continuation<StackbricksPackageFile>?=null
     ): StackbricksPackageFile
 }

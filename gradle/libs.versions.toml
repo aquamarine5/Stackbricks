@@ -1,6 +1,5 @@
 [versions]
 agp = "9.0.0"
-compiler = "1.5.15"
 datastore = "1.2.0"
 fastjson2 = "2.0.60"
 kotlin = "2.3.0"
@@ -13,12 +12,12 @@ kotlinxSerializationJson = "1.10.0"
 material = "1.13.0"
 okhttp = "5.3.2"
 okio = "3.16.4"
-protobufJavalite = "4.33.4"
-uiGraphicsAndroid = "1.10.1"
-foundationAndroid = "1.10.1"
+protobufJavalite = "4.33.5"
+uiGraphicsAndroid = "1.10.2"
+foundationAndroid = "1.10.2"
 material3Android = "1.4.0"
-uiToolingPreviewAndroid = "1.10.1"
-uiTooling = "1.10.1"
+uiToolingPreviewAndroid = "1.10.2"
+uiTooling = "1.10.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

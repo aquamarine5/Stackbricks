@@ -74,6 +74,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.aquamarine5.brainspark.stackbricks.providers.qiniu.QiniuConfiguration
 import org.aquamarine5.brainspark.stackbricks.providers.qiniu.QiniuMessageProvider
 import org.aquamarine5.brainspark.stackbricks.providers.qiniu.QiniuPackageProvider
@@ -83,6 +84,7 @@ import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import javax.net.ssl.SSLHandshakeException
+import kotlin.coroutines.suspendCoroutine
 import kotlin.math.ceil
 
 @Composable
@@ -380,7 +382,11 @@ fun StackbricksComponent(
                                     if (isDownloading.not()) {
                                         isDownloading = true
                                         trigger?.onDownloadPackage()
-                                        service.downloadPackage()
+                                        suspendCoroutine{ continuation ->
+                                            coroutineScope.launch {
+                                                service.downloadPackage(continuation=continuation)
+                                            }
+                                        }
                                         isDownloading = false
                                     }
                                 }.onFailure {

@@ -6,11 +6,14 @@
 
 package org.aquamarine5.brainspark.stackbricks
 
+import org.aquamarine5.brainspark.stackbricks.providers.qiniu.QiniuManifest
+import kotlin.coroutines.Continuation
+
 interface StackbricksMessageProvider {
     @Deprecated("Use getManifest().latestStable instead")
     suspend fun getLatestVersionData(): StackbricksVersionData
 
     @Deprecated("Use getManifest().latestTest instead")
     suspend fun getLatestTestVersionData(): StackbricksVersionData
-    suspend fun getManifest(): StackbricksManifest
+    suspend fun getManifest(continuation: Continuation<QiniuManifest>?=null): StackbricksManifest
 }

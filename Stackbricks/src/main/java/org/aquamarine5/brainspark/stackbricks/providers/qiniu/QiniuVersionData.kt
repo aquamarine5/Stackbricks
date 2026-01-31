@@ -23,5 +23,6 @@ data class QiniuVersionData(
         ReplaceWith("forceInstallLessVersion>versionCode")
     )
     override val forceInstall: Boolean,
-    override val isStable: Boolean, override val forceInstallLessVersion: Int
+    override val isStable: Boolean,
+    override val forceInstallLessVersion: Int
 ) : StackbricksVersionData
