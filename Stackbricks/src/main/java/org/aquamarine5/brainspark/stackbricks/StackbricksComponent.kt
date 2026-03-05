@@ -94,17 +94,19 @@ fun StackbricksComponent(
     trigger: StackbricksEventTrigger? = null
 ) {
     val context = LocalContext.current
-    val buttonColorMatchMap = mapOf(
-        StackbricksStatus.STATUS_START to Color(81, 196, 211),
-        StackbricksStatus.STATUS_CHECKING to Color(81, 196, 211),
-        StackbricksStatus.STATUS_CLICK_INSTALL to Color(236, 138, 164),
-        StackbricksStatus.STATUS_INTERNAL_ERROR to Color(238, 72, 102),
-        StackbricksStatus.STATUS_NETWORK_ERROR to Color(238, 72, 102),
-        StackbricksStatus.STATUS_DOWNLOADING to Color(0xFFFCC307),
-        StackbricksStatus.STATUS_BETA_AVAILABLE to Color(0xFFFCC307),
-        StackbricksStatus.STATUS_NEWER_VERSION to Color(0xFFFCC307),
-        StackbricksStatus.STATUS_NEWEST to Color(69, 210, 154)
-    )
+    val buttonColorMatchMap = remember {
+        mapOf(
+            StackbricksStatus.STATUS_START to Color(81, 196, 211),
+            StackbricksStatus.STATUS_CHECKING to Color(81, 196, 211),
+            StackbricksStatus.STATUS_CLICK_INSTALL to Color(236, 138, 164),
+            StackbricksStatus.STATUS_INTERNAL_ERROR to Color(238, 72, 102),
+            StackbricksStatus.STATUS_NETWORK_ERROR to Color(238, 72, 102),
+            StackbricksStatus.STATUS_DOWNLOADING to Color(0xFFFCC307),
+            StackbricksStatus.STATUS_BETA_AVAILABLE to Color(0xFFFCC307),
+            StackbricksStatus.STATUS_NEWER_VERSION to Color(0xFFFCC307),
+            StackbricksStatus.STATUS_NEWEST to Color(69, 210, 154)
+        )
+    }
     val tipsTextMatchMap = mapOf(
         StackbricksStatus.STATUS_NEWEST to stringResource(R.string.stackbricks_tips_newest),
         StackbricksStatus.STATUS_NEWER_VERSION to stringResource(R.string.stackbricks_tips_newversion),
@@ -132,7 +134,7 @@ fun StackbricksComponent(
     val fontGilroy = SpanStyle(fontSize = 13.sp, fontFamily = FontFamily(Font(R.font.gilroy)))
     val coroutineScope = rememberCoroutineScope()
     val hapticFeedback = LocalHapticFeedback.current
-    var isDownloading = remember { false }
+    var isDownloading = rememberSaveable { false }
     var buttonSize by remember { mutableFloatStateOf(30.dp.value) }
     var isBetaChannel by remember { mutableStateOf(false) }
     var isCheckUpdateOnLaunch by remember { mutableStateOf(true) }
@@ -319,7 +321,7 @@ fun StackbricksComponent(
                             coroutineScope.launch {
                                 runCatching {
                                     status = StackbricksStatus.STATUS_CHECKING
-                                    trigger?.onCheckUpdate(isTestChannel = false)
+                                    trigger?.onCheckUpdate(isTestChannel = isBetaChannel)
                                     status = if (isBetaChannel)
                                         if (service.isBetaVersionAvailable(true) != null)
                                             StackbricksStatus.STATUS_BETA_AVAILABLE
@@ -346,7 +348,7 @@ fun StackbricksComponent(
                             coroutineScope.launch {
                                 runCatching {
                                     status = StackbricksStatus.STATUS_CHECKING
-                                    trigger?.onCheckUpdate(isTestChannel = false)
+                                    trigger?.onCheckUpdate(isTestChannel = isBetaChannel)
                                     status = if (isBetaChannel)
                                         if (service.isBetaVersionAvailable() != null)
                                             StackbricksStatus.STATUS_BETA_AVAILABLE
@@ -379,16 +381,9 @@ fun StackbricksComponent(
                             coroutineScope.launch {
                                 runCatching {
                                     downloadProgress = 0f
-                                    if (isDownloading.not()) {
-                                        isDownloading = true
-                                        trigger?.onDownloadPackage()
-                                        suspendCoroutine{ continuation ->
-                                            coroutineScope.launch {
-                                                service.downloadPackage(continuation=continuation)
-                                            }
-                                        }
-                                        isDownloading = false
-                                    }
+                                    trigger?.onDownloadPackage()
+                                    status = StackbricksStatus.STATUS_DOWNLOADING
+                                    service.downloadPackage()
                                 }.onFailure {
                                     hapticFeedback.performHapticFeedback(HapticFeedbackType.Reject)
                                     if (it.isWebException()) {

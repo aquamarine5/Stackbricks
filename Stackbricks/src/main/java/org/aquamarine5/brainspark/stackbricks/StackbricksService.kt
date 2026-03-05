@@ -44,6 +44,12 @@ open class StackbricksService(
         }
     }
 
+    open suspend fun deleteTemp() {
+        context.cacheDir.listFiles { _, name ->
+            name.startsWith("stackbricks_temp_apks") && name.endsWith(".apk")
+        }?.forEach { it.delete() }
+    }
+
     open suspend fun getManifest(dismissCache: Boolean = false,continuation: Continuation<StackbricksManifest>?=null): StackbricksManifest {
         return if (_manifest == null || dismissCache) {
             messageProvider.getManifest(continuation).apply {
@@ -110,16 +116,14 @@ open class StackbricksService(
     }
 
     open suspend fun downloadPackage(
-        withProgress: Boolean = true,
-        continuation: Continuation<StackbricksPackageFile>?=null
+        withProgress: Boolean = true
     ): StackbricksPackageFile {
         if (state.tmpVersion.value == null)
             throw NullPointerException("Version data is null, please call isNeedUpdate() or isBetaVersionAvailable() first")
         return packageProvider.downloadPackage(
             context,
             state.tmpVersion.value!!,
-            if (withProgress) state.downloadingProgress else null,
-            continuation
+            if (withProgress) state.downloadingProgress else null
         ).apply {
             state.tmpPackage = this
         }

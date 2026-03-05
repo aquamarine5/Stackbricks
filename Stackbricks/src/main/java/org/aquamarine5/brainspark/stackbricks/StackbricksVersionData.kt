@@ -23,5 +23,5 @@ interface StackbricksVersionData {
     )
     val forceInstall: Boolean
     val isStable: Boolean
-    val forceInstallLessVersion: Int
+    val forceInstallLessVersion: Long
 }

@@ -34,8 +34,7 @@ class QiniuPackageProvider(
     override suspend fun downloadPackage(
         context: Context,
         versionData: StackbricksVersionData,
-        downloadProgress: MutableState<Float?>?,
-        continuation: Continuation<StackbricksPackageFile>?
+        downloadProgress: MutableState<Float?>?
     ): StackbricksPackageFile {
         configuration.possibleConfigurations.forEach {
             val req = Request.Builder()
@@ -56,7 +55,7 @@ class QiniuPackageProvider(
                                 if (isDone) 1f else (bytesRead / contentLength.toDouble()).toFloat()
                         }
                     val file = File.createTempFile(
-                        "stackbricks_qiniu_${versionData.versionCode}",
+                        "stackbricks_temp_apks_qiniu_${versionData.versionCode}",
                         ".apk",
                         context.cacheDir
                     )
@@ -64,14 +63,10 @@ class QiniuPackageProvider(
                         sink.writeAll(progressedBody.source())
                     }
 
-                    return@withContext StackbricksPackageFile(file, versionData.isStable).apply {
-                        continuation?.resume(this)
-                    }
+                    return@withContext StackbricksPackageFile(file, versionData.isStable)
                 }
             }
         }
-        throw NoAvailableManifestException().apply {
-            continuation?.resumeWithException(this)
-        }
+        throw NoAvailableManifestException()
     }
 }

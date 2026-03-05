@@ -16,7 +16,6 @@ interface StackbricksPackageProvider {
     suspend fun downloadPackage(
         context: Context,
         versionData: StackbricksVersionData,
-        downloadProgress: MutableState<Float?>? = null,
-        continuation: Continuation<StackbricksPackageFile>?=null
+        downloadProgress: MutableState<Float?>? = null
     ): StackbricksPackageFile
 }
