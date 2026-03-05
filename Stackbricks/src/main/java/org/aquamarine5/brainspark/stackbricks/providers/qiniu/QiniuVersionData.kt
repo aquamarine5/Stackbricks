@@ -24,5 +24,5 @@ data class QiniuVersionData(
     )
     override val forceInstall: Boolean,
     override val isStable: Boolean,
-    override val forceInstallLessVersion: Int
+    override val forceInstallLessVersion: Long
 ) : StackbricksVersionData

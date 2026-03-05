@@ -78,7 +78,7 @@ class QiniuMessageProvider(
                                     getString("changelog"),
                                     getBoolean("forceInstall"),
                                     true,
-                                    getInteger("forceInstallLessVersion") ?: -1
+                                    getLong("forceInstallLessVersion") ?: -1
                                 )
                             },
                             baseJson.getJSONObject("latestTest").run {
@@ -91,7 +91,7 @@ class QiniuMessageProvider(
                                     getString("changelog"),
                                     getBoolean("forceInstall"),
                                     false,
-                                    getInteger("forceInstallLessVersion") ?: -1
+                                    getLong("forceInstallLessVersion") ?: -1
                                 )
                             },
                             version

@@ -59,7 +59,7 @@ data class StackbricksState(
                             it[10] as String,
                             it[11] as Boolean,
                             it[9] as Boolean,
-                            it[14] as Int
+                            it[14] as Long
                         )
                     ) else mutableStateOf(null)
                 )
