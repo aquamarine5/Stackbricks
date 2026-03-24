@@ -15,6 +15,8 @@ data class QiniuConfiguration(
     val configFilePath: String = "stackbricks_config_v1.json",
     val isHttps: Boolean = false,
     val possibleConfigurations: List<Pair<String, String>>,
-    val okHttpClient: OkHttpClient = OkHttpClient(),
+    val okHttpClient: OkHttpClient = OkHttpClient.Builder().apply {
+        retryOnConnectionFailure(true)
+    }.build(),
     val referer: String? = null
 )

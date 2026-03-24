@@ -72,6 +72,7 @@ import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -144,32 +145,34 @@ fun StackbricksComponent(
     var isForceInstallDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        context.stackbricksDataStore.data.first().let { datastore ->
-            isBetaChannel = datastore.isBetaChannel
-            isCheckUpdateOnLaunch = datastore.isCheckUpdateOnLaunch
-            runCatching {
-                if (datastore.isCheckUpdateOnLaunch && service.state.status.value == StackbricksStatus.STATUS_START) {
-                    if (isBetaChannel) {
-                        status = StackbricksStatus.STATUS_CHECKING
-                        status =
-                            if (service.isBetaVersionAvailable() != null)
-                                StackbricksStatus.STATUS_BETA_AVAILABLE
-                            else StackbricksStatus.STATUS_NEWEST
-                    } else {
-                        status = StackbricksStatus.STATUS_CHECKING
-                        status =
-                            if (service.isNewerVersion())
-                                StackbricksStatus.STATUS_NEWER_VERSION
-                            else StackbricksStatus.STATUS_NEWEST
+        coroutineScope.launch(Dispatchers.IO) {
+            context.stackbricksDataStore.data.first().let { datastore ->
+                isBetaChannel = datastore.isBetaChannel
+                isCheckUpdateOnLaunch = datastore.isCheckUpdateOnLaunch
+                runCatching {
+                    if (datastore.isCheckUpdateOnLaunch && service.state.status.value == StackbricksStatus.STATUS_START) {
+                        if (isBetaChannel) {
+                            status = StackbricksStatus.STATUS_CHECKING
+                            status =
+                                if (service.isBetaVersionAvailable() != null)
+                                    StackbricksStatus.STATUS_BETA_AVAILABLE
+                                else StackbricksStatus.STATUS_NEWEST
+                        } else {
+                            status = StackbricksStatus.STATUS_CHECKING
+                            status =
+                                if (service.isNewerVersion())
+                                    StackbricksStatus.STATUS_NEWER_VERSION
+                                else StackbricksStatus.STATUS_NEWEST
+                        }
                     }
-                }
-            }.onFailure {
-                if (it.isWebException()) {
-                    status = StackbricksStatus.STATUS_NETWORK_ERROR
-                    errorTips = "网络错误：${it.localizedMessage}"
-                } else {
-                    status = StackbricksStatus.STATUS_INTERNAL_ERROR
-                    errorTips = "内部错误：${it.localizedMessage}"
+                }.onFailure {
+                    if (it.isWebException()) {
+                        status = StackbricksStatus.STATUS_NETWORK_ERROR
+                        errorTips = "网络错误：${it.localizedMessage}"
+                    } else {
+                        status = StackbricksStatus.STATUS_INTERNAL_ERROR
+                        errorTips = "内部错误：${it.localizedMessage}"
+                    }
                 }
             }
         }
@@ -712,7 +715,7 @@ fun StackbricksComponent(
                         }
                         if (service.stackbricksPolicy?.isAllowedToDisableCheckUpdateOnLaunch == false) {
                             Text(
-                                "开发者设置了应用更新策略，不允许此值。",
+                                "开发者设置了应用更新策略，不允许修改此值。",
                                 color = Color(0xFFF34718)
                             )
                         }
