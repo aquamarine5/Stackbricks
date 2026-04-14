@@ -15,5 +15,5 @@ interface StackbricksMessageProvider {
 
     @Deprecated("Use getManifest().latestTest instead")
     suspend fun getLatestTestVersionData(): StackbricksVersionData
-    suspend fun getManifest(continuation: Continuation<QiniuManifest>?=null): StackbricksManifest
+    suspend fun getManifest(): StackbricksManifest
 }

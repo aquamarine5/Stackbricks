@@ -27,6 +27,7 @@
    <fields>;
 }
 
+-keep class org.aquamarine5.brainspark.stackbricks.** {*;}
 -keep class androidx.datastore.*.** {*;}
 -keep class org.aquamarine5.brainspark.stackbricks.datastore.** {*;}
 

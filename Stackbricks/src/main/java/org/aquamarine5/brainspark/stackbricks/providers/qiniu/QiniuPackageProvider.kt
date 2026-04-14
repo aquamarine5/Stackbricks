@@ -36,37 +36,43 @@ class QiniuPackageProvider(
         versionData: StackbricksVersionData,
         downloadProgress: MutableState<Float?>?
     ): StackbricksPackageFile {
+        val exceptions = mutableListOf<Throwable>()
         configuration.possibleConfigurations.forEach {
-            val req = Request.Builder()
-                .url("http://${it.first}/${versionData.downloadFilename}")
-                .get()
-            configuration.referer?.let { referer ->
-                req.addHeader("Referer", referer)
-            }
-            return withContext(Dispatchers.IO) {
-                configuration.okHttpClient.newCall(req.build()).execute().use { response ->
-                    if (!response.isSuccessful) {
-                        throw IllegalStateException("Unexpected response code: ${response.code}")
-                    }
-                    val body = response.body
-                    val progressedBody =
-                        ProgressedResponseBody(body) { bytesRead, contentLength, isDone ->
-                            downloadProgress?.value =
-                                if (isDone) 1f else (bytesRead / contentLength.toDouble()).toFloat()
-                        }
-                    val file = File.createTempFile(
-                        "stackbricks_temp_apks_qiniu_${versionData.versionCode}",
-                        ".apk",
-                        context.cacheDir
-                    )
-                    file.sink().buffer().use { sink ->
-                        sink.writeAll(progressedBody.source())
-                    }
-
-                    return@withContext StackbricksPackageFile(file, versionData.isStable)
+            runCatching {
+                val req = Request.Builder()
+                    .url("http://${it.first}/${versionData.downloadFilename}")
+                    .get()
+                configuration.referer?.let { referer ->
+                    req.addHeader("Referer", referer)
                 }
+                return withContext(Dispatchers.IO) {
+                    configuration.okHttpClient.newCall(req.build()).execute().use { response ->
+                        if (!response.isSuccessful) {
+                            throw IllegalStateException("Unexpected response code: ${response.code}")
+                        }
+                        val body = response.body
+                        val progressedBody =
+                            ProgressedResponseBody(body) { bytesRead, contentLength, isDone ->
+                                downloadProgress?.value =
+                                    if (isDone) 1f else (bytesRead / contentLength.toDouble()).toFloat()
+                            }
+                        val file = File.createTempFile(
+                            "stackbricks_temp_apks_qiniu_${versionData.versionCode}",
+                            ".apk",
+                            context.cacheDir
+                        )
+                        file.sink().buffer().use { sink ->
+                            sink.writeAll(progressedBody.source())
+                        }
+
+                        return@withContext StackbricksPackageFile(file, versionData.isStable)
+                    }
+                }
+            }.onFailure {
+                it.printStackTrace()
+                exceptions.add(it)
             }
         }
-        throw NoAvailableManifestException()
+        throw NoAvailableManifestException(exceptions)
     }
 }

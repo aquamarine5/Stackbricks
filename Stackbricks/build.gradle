@@ -14,7 +14,7 @@ plugins {
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:4.34.0"
+        artifact = "com.google.protobuf:protoc:4.34.1"
     }
 
     generateProtoTasks {
@@ -27,7 +27,7 @@ protobuf {
         }
     }
 }
-var stackbricksVersion = "2.4.13"
+var stackbricksVersion = "2.4.15"
 publishing {
     publications {
         release(MavenPublication) {
@@ -71,7 +71,7 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled true
+            minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }

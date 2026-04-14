@@ -50,9 +50,9 @@ open class StackbricksService(
         }?.forEach { it.delete() }
     }
 
-    open suspend fun getManifest(dismissCache: Boolean = false,continuation: Continuation<StackbricksManifest>?=null): StackbricksManifest {
+    open suspend fun getManifest(dismissCache: Boolean = false): StackbricksManifest {
         return if (_manifest == null || dismissCache) {
-            messageProvider.getManifest(continuation).apply {
+            messageProvider.getManifest().apply {
                 _manifest = this
             }
         } else {

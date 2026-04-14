@@ -31,10 +31,11 @@ class QiniuMessageProvider(
         const val CURRENT_LATEST_PARSE_CONFIG_VERSION = 3
     }
 
-    override suspend fun getManifest(continuation: Continuation<QiniuManifest>?): QiniuManifest {
+    override suspend fun getManifest(): QiniuManifest {
+        val exceptions=mutableListOf<Throwable>()
         configuration.possibleConfigurations.forEach {
             val configUrl =
-                URL(if (configuration.isHttps) "https" else "http" + "://${it.first}/${it.second}")
+                if (configuration.isHttps) "https" else "http" + "://${it.first}/${it.second}"
             val req = Request.Builder()
                 .get()
                 .url(configUrl)
@@ -62,9 +63,7 @@ class QiniuMessageProvider(
                                 throw StackbricksUnsupportedConfigException(
                                     version,
                                     CURRENT_LATEST_PARSE_CONFIG_VERSION
-                                ).apply {
-                                    continuation?.resumeWithException(this)
-                                }
+                                )
                             }
                         }
                         return@use QiniuManifest(
@@ -99,14 +98,13 @@ class QiniuMessageProvider(
                     }
                 }
             }.onSuccess { manifest ->
-                return manifest.apply {
-                    continuation?.resume(this)
-                }
+                return manifest
+            }.onFailure {
+                it.printStackTrace()
+                exceptions.add(it)
             }
         }
-        throw NoAvailableManifestException().apply {
-            continuation?.resumeWithException(this)
-        }
+        throw NoAvailableManifestException(exceptions)
     }
 
     @Deprecated(

@@ -6,5 +6,6 @@
 
 package org.aquamarine5.brainspark.stackbricks
 
-class NoAvailableManifestException : Exception("No available manifest found.") {
+class NoAvailableManifestException(exceptions: List<Throwable>) :
+    Exception("No available manifest found, exceptions: ${exceptions.joinToString(", ") { "${it::class.java.name}: ${it.localizedMessage ?: it.toString()}}" }}") {
 }
