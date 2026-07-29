@@ -6,10 +6,12 @@
 
 package org.aquamarine5.brainspark.stackbricks
 
+import androidx.compose.runtime.Immutable
+import java.io.Serializable
 import java.time.Instant
-import java.util.Date
 
-interface StackbricksVersionData {
+@Immutable
+interface StackbricksVersionData : Serializable {
     val packageName: String
     val versionCode: Int
     val versionName: String

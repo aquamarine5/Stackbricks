@@ -10,7 +10,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -57,8 +56,8 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.Font
@@ -75,17 +74,14 @@ import androidx.compose.ui.zIndex
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import org.aquamarine5.brainspark.stackbricks.providers.qiniu.QiniuConfiguration
 import org.aquamarine5.brainspark.stackbricks.providers.qiniu.QiniuMessageProvider
 import org.aquamarine5.brainspark.stackbricks.providers.qiniu.QiniuPackageProvider
 import java.io.IOException
-import java.net.ConnectException
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import javax.net.ssl.SSLHandshakeException
-import kotlin.coroutines.suspendCoroutine
 import kotlin.math.ceil
 
 @Composable
@@ -95,6 +91,7 @@ fun StackbricksComponent(
     trigger: StackbricksEventTrigger? = null
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val buttonColorMatchMap = remember {
         mapOf(
             StackbricksStatus.STATUS_START to Color(81, 196, 211),
@@ -108,19 +105,21 @@ fun StackbricksComponent(
             StackbricksStatus.STATUS_NEWEST to Color(69, 210, 154)
         )
     }
-    val tipsTextMatchMap = mapOf(
-        StackbricksStatus.STATUS_NEWEST to stringResource(R.string.stackbricks_tips_newest),
-        StackbricksStatus.STATUS_NEWER_VERSION to stringResource(R.string.stackbricks_tips_newversion),
-        StackbricksStatus.STATUS_BETA_AVAILABLE to "有新测试版可用",
-        StackbricksStatus.STATUS_START to stringResource(R.string.stackbricks_tips_checkupdate),
-        StackbricksStatus.STATUS_INTERNAL_ERROR to stringResource(R.string.stackbricks_tips_programerror),
-        StackbricksStatus.STATUS_NETWORK_ERROR to stringResource(R.string.stackbricks_tips_networkerror),
-        StackbricksStatus.STATUS_CLICK_INSTALL to stringResource(R.string.stackbricks_tips_clickinstall),
-        StackbricksStatus.STATUS_DOWNLOADING to stringResource(R.string.stackbricks_tips_downloading),
-        StackbricksStatus.STATUS_CHECKING to stringResource(R.string.stackbricks_tips_checking)
-    )
-    var status by service.state.status
-    var downloadProgress by service.state.downloadingProgress
+    val tipsTextMatchMap = remember {
+        mapOf(
+            StackbricksStatus.STATUS_NEWEST to resources.getString(R.string.stackbricks_tips_newest),
+            StackbricksStatus.STATUS_NEWER_VERSION to resources.getString(R.string.stackbricks_tips_newversion),
+            StackbricksStatus.STATUS_BETA_AVAILABLE to "有新测试版可用",
+            StackbricksStatus.STATUS_START to resources.getString(R.string.stackbricks_tips_checkupdate),
+            StackbricksStatus.STATUS_INTERNAL_ERROR to resources.getString(R.string.stackbricks_tips_programerror),
+            StackbricksStatus.STATUS_NETWORK_ERROR to resources.getString(R.string.stackbricks_tips_networkerror),
+            StackbricksStatus.STATUS_CLICK_INSTALL to resources.getString(R.string.stackbricks_tips_clickinstall),
+            StackbricksStatus.STATUS_DOWNLOADING to resources.getString(R.string.stackbricks_tips_downloading),
+            StackbricksStatus.STATUS_CHECKING to resources.getString(R.string.stackbricks_tips_checking)
+        )
+    }
+    var status by remember { service.state.status }
+    var downloadProgress by remember { service.state.downloadingProgress }
     var errorTips by remember { mutableStateOf("") }
     val buttonColorValue by remember { derivedStateOf { buttonColorMatchMap[status]!! } }
     val buttonColor by animateColorAsState(buttonColorValue)
@@ -132,10 +131,10 @@ fun StackbricksComponent(
             }
         }
     }
-    val fontGilroy = SpanStyle(fontSize = 13.sp, fontFamily = FontFamily(Font(R.font.gilroy)))
+    val fontGilroy =
+        remember { SpanStyle(fontSize = 13.sp, fontFamily = FontFamily(Font(R.font.gilroy))) }
     val coroutineScope = rememberCoroutineScope()
     val hapticFeedback = LocalHapticFeedback.current
-    var isDownloading = rememberSaveable { false }
     var buttonSize by remember { mutableFloatStateOf(30.dp.value) }
     var isBetaChannel by remember { mutableStateOf(false) }
     var isCheckUpdateOnLaunch by remember { mutableStateOf(true) }
@@ -147,7 +146,7 @@ fun StackbricksComponent(
     LaunchedEffect(Unit) {
         coroutineScope.launch(Dispatchers.IO) {
             context.stackbricksDataStore.data.first().let { datastore ->
-                isBetaChannel = datastore.isBetaChannel
+                isBetaChannel = datastore.isBetaChannel || isCurrentTestVersion
                 isCheckUpdateOnLaunch = datastore.isCheckUpdateOnLaunch
                 runCatching {
                     if (datastore.isCheckUpdateOnLaunch && service.state.status.value == StackbricksStatus.STATUS_START) {
@@ -506,7 +505,8 @@ fun StackbricksComponent(
                     }
                 }
                 AnimatedVisibility(
-                    service.internalVersionData != null && (status == StackbricksStatus.STATUS_BETA_AVAILABLE || status == StackbricksStatus.STATUS_NEWER_VERSION),
+                    service.internalVersionData != null &&
+                            (status == StackbricksStatus.STATUS_BETA_AVAILABLE || status == StackbricksStatus.STATUS_NEWER_VERSION || status == StackbricksStatus.STATUS_DOWNLOADING),
                     enter = expandVertically(),
                     exit = shrinkVertically()
                 ) {
@@ -515,7 +515,7 @@ fun StackbricksComponent(
                         Text(
                             buildAnnotatedString {
                                 append("最新")
-                                if (status == StackbricksStatus.STATUS_BETA_AVAILABLE) {
+                                if (service.state.tmpPackage?.isStable == false) {
                                     withStyle(
                                         SpanStyle(
                                             textDecoration = TextDecoration.Underline,

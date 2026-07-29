@@ -6,8 +6,6 @@
 
 package org.aquamarine5.brainspark.stackbricks
 
-import kotlin.Exception
-
 class StackbricksUnsupportedConfigException(
     configVersion: Int,
     supportedVersion: Int,

@@ -7,14 +7,15 @@
 plugins {
     alias(libs.plugins.android.library)
     id 'maven-publish'
+    id("kotlin-parcelize")
     alias(libs.plugins.kotlin.compose)
     id("com.google.protobuf") version "0.9.6"
-    id("org.jetbrains.kotlin.plugin.serialization") version "2.3.20"
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.4.10"
 }
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:4.34.1"
+        artifact = "com.google.protobuf:protoc:4.35.1"
     }
 
     generateProtoTasks {
@@ -27,7 +28,7 @@ protobuf {
         }
     }
 }
-var stackbricksVersion = "2.4.15"
+var stackbricksVersion = "2.4.18"
 publishing {
     publications {
         release(MavenPublication) {
@@ -60,9 +61,9 @@ android {
         }
     }
     namespace 'org.aquamarine5.brainspark.stackbricks'
-    compileSdk 36
 
     defaultConfig {
+        compileSdk 37
         minSdk 26
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
@@ -81,7 +82,10 @@ android {
     }
     buildFeatures.compose = true
 }
-
+composeCompiler {
+    reportsDestination = layout.buildDirectory.dir("compose_compiler")
+    metricsDestination = layout.buildDirectory.dir("compose_compiler")
+}
 dependencies {
     implementation(libs.protobuf.javalite)
     implementation(libs.androidx.datastore)

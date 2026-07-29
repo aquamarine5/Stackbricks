@@ -12,15 +12,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Request
 import org.aquamarine5.brainspark.stackbricks.NoAvailableManifestException
-import org.aquamarine5.brainspark.stackbricks.StackbricksManifest
 import org.aquamarine5.brainspark.stackbricks.StackbricksMessageProvider
 import org.aquamarine5.brainspark.stackbricks.StackbricksUnsupportedConfigException
 import org.aquamarine5.brainspark.stackbricks.StackbricksVersionData
-import java.net.URL
 import java.time.Instant
-import kotlin.coroutines.Continuation
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 class QiniuMessageProvider(
     private val configuration: QiniuConfiguration
@@ -32,7 +27,7 @@ class QiniuMessageProvider(
     }
 
     override suspend fun getManifest(): QiniuManifest {
-        val exceptions=mutableListOf<Throwable>()
+        val exceptions = mutableListOf<Throwable>()
         configuration.possibleConfigurations.forEach {
             val configUrl =
                 if (configuration.isHttps) "https" else "http" + "://${it.first}/${it.second}"

@@ -8,12 +8,13 @@ package org.aquamarine5.brainspark.stackbricks
 
 import android.content.Context
 import android.util.Log
-import androidx.compose.runtime.Stable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.core.content.pm.PackageInfoCompat
 import kotlinx.coroutines.delay
-import kotlin.coroutines.Continuation
+import kotlin.time.Duration.Companion.milliseconds
 
+@Immutable
 open class StackbricksService(
     private val context: Context,
     private val messageProvider: StackbricksMessageProvider,
@@ -101,7 +102,7 @@ open class StackbricksService(
         val currentVersion = getCurrentVersion()
         val updateMessage = getManifest(dismissCache).latestStable
         state.tmpVersion.value = updateMessage
-        if (dismissCache) delay(300)
+        if (dismissCache) delay(300.milliseconds)
         return if (currentVersion < updateMessage.versionCode) updateMessage else null
     }
 
@@ -111,7 +112,7 @@ open class StackbricksService(
             return it
         }
         state.tmpVersion.value = latestTest
-        if (dismissCache) delay(300)
+        if (dismissCache) delay(300.milliseconds)
         return if (getCurrentVersion() < latestTest.versionCode) latestTest else null
     }
 
