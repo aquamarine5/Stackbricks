@@ -30,7 +30,7 @@ class QiniuMessageProvider(
         val exceptions = mutableListOf<Throwable>()
         configuration.possibleConfigurations.forEach {
             val configUrl =
-                if (configuration.isHttps) "https" else "http" + "://${it.first}/${it.second}"
+                "${if (configuration.isHttps) "https" else "http"}://${it.first}/${it.second}"
             val req = Request.Builder()
                 .get()
                 .url(configUrl)
@@ -46,20 +46,17 @@ class QiniuMessageProvider(
                         val body = response.body
                         val baseJson = JSONObject.parseObject(body.string())
                         val version = baseJson.getIntValue("manifestVersion")
-                        val isVersionSupported =
-                            CURRENT_LATEST_PARSE_CONFIG_VERSION >= version
-                        if (!isVersionSupported) {
+                        if (version < SUPPORTED_PARSE_CONFIG_VERSION) {
+                            throw StackbricksUnsupportedConfigException(
+                                version,
+                                CURRENT_LATEST_PARSE_CONFIG_VERSION
+                            )
+                        }
+                        if (version > CURRENT_LATEST_PARSE_CONFIG_VERSION) {
                             Log.w(
                                 LOGTAG,
                                 "Unsupported config version: $version, maximum supported: $CURRENT_LATEST_PARSE_CONFIG_VERSION"
                             )
-                        } else {
-                            if (version <= 1) {
-                                throw StackbricksUnsupportedConfigException(
-                                    version,
-                                    CURRENT_LATEST_PARSE_CONFIG_VERSION
-                                )
-                            }
                         }
                         return@use QiniuManifest(
                             baseJson.getJSONObject("latestStable").run {

@@ -15,7 +15,7 @@ plugins {
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:4.35.1"
+        artifact = "com.google.protobuf:protoc:4.36.1"
     }
 
     generateProtoTasks {
@@ -28,7 +28,7 @@ protobuf {
         }
     }
 }
-var stackbricksVersion = "2.4.18"
+var stackbricksVersion = "2.4.20"
 publishing {
     publications {
         release(MavenPublication) {

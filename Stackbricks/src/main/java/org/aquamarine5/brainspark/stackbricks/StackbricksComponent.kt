@@ -41,7 +41,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -82,7 +81,6 @@ import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import javax.net.ssl.SSLHandshakeException
-import kotlin.math.ceil
 
 @Composable
 fun StackbricksComponent(
@@ -135,13 +133,25 @@ fun StackbricksComponent(
         remember { SpanStyle(fontSize = 13.sp, fontFamily = FontFamily(Font(R.font.gilroy))) }
     val coroutineScope = rememberCoroutineScope()
     val hapticFeedback = LocalHapticFeedback.current
-    var buttonSize by remember { mutableFloatStateOf(30.dp.value) }
+    val density = LocalDensity.current
+    var buttonHeight by remember { mutableStateOf(30.dp) }
     var isBetaChannel by remember { mutableStateOf(false) }
     var isCheckUpdateOnLaunch by remember { mutableStateOf(true) }
     var isShowDialog by remember { mutableStateOf(false) }
     val isCurrentTestVersion = remember { service.checkCurrentIsTestChannel() }
     var isShowChangelogDialog by remember { mutableStateOf(false) }
     var isForceInstallDialog by remember { mutableStateOf(false) }
+
+    suspend fun performCheckUpdate(dismissCache: Boolean = false): StackbricksStatus =
+        if (isBetaChannel) {
+            if (service.isBetaVersionAvailable(dismissCache) != null)
+                StackbricksStatus.STATUS_BETA_AVAILABLE
+            else StackbricksStatus.STATUS_NEWEST
+        } else {
+            if (service.isNewerVersion(dismissCache))
+                StackbricksStatus.STATUS_NEWER_VERSION
+            else StackbricksStatus.STATUS_NEWEST
+        }
 
     LaunchedEffect(Unit) {
         coroutineScope.launch(Dispatchers.IO) {
@@ -150,19 +160,8 @@ fun StackbricksComponent(
                 isCheckUpdateOnLaunch = datastore.isCheckUpdateOnLaunch
                 runCatching {
                     if (datastore.isCheckUpdateOnLaunch && service.state.status.value == StackbricksStatus.STATUS_START) {
-                        if (isBetaChannel) {
-                            status = StackbricksStatus.STATUS_CHECKING
-                            status =
-                                if (service.isBetaVersionAvailable() != null)
-                                    StackbricksStatus.STATUS_BETA_AVAILABLE
-                                else StackbricksStatus.STATUS_NEWEST
-                        } else {
-                            status = StackbricksStatus.STATUS_CHECKING
-                            status =
-                                if (service.isNewerVersion())
-                                    StackbricksStatus.STATUS_NEWER_VERSION
-                                else StackbricksStatus.STATUS_NEWEST
-                        }
+                        status = StackbricksStatus.STATUS_CHECKING
+                        status = performCheckUpdate()
                     }
                 }.onFailure {
                     if (it.isWebException()) {
@@ -176,11 +175,26 @@ fun StackbricksComponent(
             }
         }
     }
+    LaunchedEffect(downloadProgress) {
+        if (downloadProgress == 1f) {
+            status = StackbricksStatus.STATUS_CLICK_INSTALL
+        }
+    }
+    LaunchedEffect(isShowDialog) {
+        if (isShowDialog && isBetaChannel.not() && service.checkCurrentIsTestChannel()) {
+            isBetaChannel = true
+            context.stackbricksDataStore.updateData { datastore ->
+                datastore.toBuilder()
+                    .setIsBetaChannel(true)
+                    .build()
+            }
+        }
+    }
     Box {
         Column {
             Spacer(modifier = Modifier.height(30.dp))
             AnimatedVisibility(
-                isBetaChannel && isCurrentTestVersion.not() && buttonSize > 40.dp.value,
+                isBetaChannel && isCurrentTestVersion.not() && buttonHeight > 40.dp,
                 enter = expandVertically() + fadeIn(initialAlpha = 0f),
                 exit = shrinkVertically()
             ) {
@@ -190,9 +204,7 @@ fun StackbricksComponent(
                         containerColor = Color(0xFFFFE288)
                     ), modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = with(LocalDensity.current) {
-                            ceil(buttonSize).toInt().toDp()
-                        } - 60.dp)
+                        .padding(top = buttonHeight - 60.dp)
                         .zIndex(0f)
                 ) {
                     Spacer(modifier = Modifier.height(25.dp))
@@ -221,16 +233,14 @@ fun StackbricksComponent(
             }
         }
         Column {
-            if (isCurrentTestVersion && buttonSize > 40.dp.value) {
+            if (isCurrentTestVersion && buttonHeight > 40.dp) {
                 Card(
                     shape = RoundedCornerShape(18.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = Color(0xFFFFE288)
                     ), modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = with(LocalDensity.current) {
-                            ceil(buttonSize).toInt().toDp()
-                        } - 31.dp)
+                        .padding(top = buttonHeight - 31.dp)
                         .zIndex(0f)
                 ) {
                     Spacer(modifier = Modifier.height(25.dp))
@@ -302,9 +312,6 @@ fun StackbricksComponent(
                                 gapSize = (-1).dp,
                                 drawStopIndicator = {}
                             )
-                            if (it == 1F) {
-                                status = StackbricksStatus.STATUS_CLICK_INSTALL
-                            }
                         }
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
@@ -324,15 +331,7 @@ fun StackbricksComponent(
                                 runCatching {
                                     status = StackbricksStatus.STATUS_CHECKING
                                     trigger?.onCheckUpdate(isTestChannel = isBetaChannel)
-                                    status = if (isBetaChannel)
-                                        if (service.isBetaVersionAvailable(true) != null)
-                                            StackbricksStatus.STATUS_BETA_AVAILABLE
-                                        else
-                                            StackbricksStatus.STATUS_NEWEST
-                                    else
-                                        if (service.isNewerVersion(true))
-                                            StackbricksStatus.STATUS_NEWER_VERSION
-                                        else StackbricksStatus.STATUS_NEWEST
+                                    status = performCheckUpdate(dismissCache = true)
                                 }.onFailure {
                                     hapticFeedback.performHapticFeedback(HapticFeedbackType.Reject)
                                     if (it.isWebException()) {
@@ -351,15 +350,7 @@ fun StackbricksComponent(
                                 runCatching {
                                     status = StackbricksStatus.STATUS_CHECKING
                                     trigger?.onCheckUpdate(isTestChannel = isBetaChannel)
-                                    status = if (isBetaChannel)
-                                        if (service.isBetaVersionAvailable() != null)
-                                            StackbricksStatus.STATUS_BETA_AVAILABLE
-                                        else
-                                            StackbricksStatus.STATUS_NEWEST
-                                    else
-                                        if (service.isNewerVersion())
-                                            StackbricksStatus.STATUS_NEWER_VERSION
-                                        else StackbricksStatus.STATUS_NEWEST
+                                    status = performCheckUpdate()
                                 }.onFailure {
                                     hapticFeedback.performHapticFeedback(HapticFeedbackType.Reject)
                                     if (it.isWebException()) {
@@ -423,11 +414,8 @@ fun StackbricksComponent(
                             coroutineScope.launch {
                                 runCatching {
                                     status = StackbricksStatus.STATUS_CHECKING
-                                    status =
-                                        if (service.isNewerVersion())
-                                            StackbricksStatus.STATUS_NEWER_VERSION
-                                        else StackbricksStatus.STATUS_NEWEST
-                                    trigger?.onCheckUpdate(isTestChannel = false)
+                                    trigger?.onCheckUpdate(isTestChannel = isBetaChannel)
+                                    status = performCheckUpdate()
                                 }.onFailure {
                                     hapticFeedback.performHapticFeedback(HapticFeedbackType.Reject)
                                     if (it.isWebException()) {
@@ -456,7 +444,7 @@ fun StackbricksComponent(
             modifier = Modifier
                 .fillMaxWidth()
                 .onGloballyPositioned {
-                    buttonSize = it.boundsInParent().height
+                    buttonHeight = with(density) { it.boundsInParent().height.toDp() }
                 }
                 .zIndex(1f)
                 .then(modifier),
@@ -498,9 +486,6 @@ fun StackbricksComponent(
                                 gapSize = (-1).dp,
                                 drawStopIndicator = {}
                             )
-                            if (it == 1F) {
-                                status = StackbricksStatus.STATUS_CLICK_INSTALL
-                            }
                         }
                     }
                 }
@@ -515,7 +500,7 @@ fun StackbricksComponent(
                         Text(
                             buildAnnotatedString {
                                 append("最新")
-                                if (service.state.tmpPackage?.isStable == false) {
+                                if (service.internalVersionData?.isStable == false) {
                                     withStyle(
                                         SpanStyle(
                                             textDecoration = TextDecoration.Underline,
@@ -619,16 +604,6 @@ fun StackbricksComponent(
             }
         }
         if (isShowDialog) {
-            if (isBetaChannel.not() && service.checkCurrentIsTestChannel()) {
-                isBetaChannel = true
-                LaunchedEffect(Unit) {
-                    context.stackbricksDataStore.updateData { datastore ->
-                        datastore.toBuilder()
-                            .setIsBetaChannel(isBetaChannel)
-                            .build()
-                    }
-                }
-            }
             AlertDialog(
                 onDismissRequest = { isShowDialog = false },
                 confirmButton = {

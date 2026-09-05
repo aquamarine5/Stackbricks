@@ -36,7 +36,9 @@ class QiniuPackageProvider(
         configuration.possibleConfigurations.forEach {
             runCatching {
                 val req = Request.Builder()
-                    .url("http://${it.first}/${versionData.downloadFilename}")
+                    .url(
+                        "${if (configuration.isHttps) "https" else "http"}://${it.first}/${versionData.downloadFilename}"
+                    )
                     .get()
                 configuration.referer?.let { referer ->
                     req.addHeader("Referer", referer)
@@ -47,10 +49,21 @@ class QiniuPackageProvider(
                             throw IllegalStateException("Unexpected response code: ${response.code}")
                         }
                         val body = response.body
+                        var lastPublishedProgress = 0f
                         val progressedBody =
                             ProgressedResponseBody(body) { bytesRead, contentLength, isDone ->
-                                downloadProgress?.value =
-                                    if (isDone) 1f else (bytesRead / contentLength.toDouble()).toFloat()
+                                val progress = when {
+                                    isDone -> 1f
+                                    contentLength > 0 ->
+                                        (bytesRead.toFloat() / contentLength).coerceIn(0f, 1f)
+                                    else -> null
+                                }
+                                if (progress != null &&
+                                    (progress == 1f || progress - lastPublishedProgress >= 0.01f)
+                                ) {
+                                    lastPublishedProgress = progress
+                                    downloadProgress?.value = progress
+                                }
                             }
                         val file = File.createTempFile(
                             "stackbricks_temp_apks_qiniu_${versionData.versionCode}",

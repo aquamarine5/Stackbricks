@@ -45,10 +45,21 @@ data class StackbricksState(
                 )
             },
             restore = {
+                val hasRestoredPackage = it[2] as Boolean
+                val restoredStatus = it[0] as StackbricksStatus
+                val restoredProgress = it[1] as Float?
+                val (status, progress) = when {
+                    restoredStatus == StackbricksStatus.STATUS_DOWNLOADING && hasRestoredPackage ->
+                        StackbricksStatus.STATUS_CLICK_INSTALL to restoredProgress
+                    restoredStatus == StackbricksStatus.STATUS_DOWNLOADING ||
+                            restoredStatus == StackbricksStatus.STATUS_CHECKING ->
+                        StackbricksStatus.STATUS_START to null
+                    else -> restoredStatus to restoredProgress
+                }
                 StackbricksState(
-                    mutableStateOf(it[0] as StackbricksStatus),
-                    mutableStateOf(it[1] as Float?),
-                    if (it[2] as Boolean) StackbricksPackageFile(
+                    mutableStateOf(status),
+                    mutableStateOf(progress),
+                    if (hasRestoredPackage) StackbricksPackageFile(
                         File(it[3] as String),
                         it[4] as Boolean
                     ) else null,
