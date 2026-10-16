@@ -11,6 +11,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.listSaver
+import com.alibaba.fastjson2.JSONObject
 import org.aquamarine5.brainspark.stackbricks.providers.qiniu.QiniuVersionData
 import java.io.File
 import java.time.Instant
@@ -23,6 +24,35 @@ data class StackbricksState(
     val tmpVersion: MutableState<StackbricksVersionData?> = mutableStateOf(null)
 ) {
     companion object {
+        private const val FIELD_SEPARATOR = '\u001F'
+        private const val RECORD_SEPARATOR = '\u001E'
+
+        private fun encodeDownloadPaths(paths: List<StackbricksDownloadPath>): String =
+            paths.joinToString(RECORD_SEPARATOR.toString()) {
+                listOf(
+                    it.authority,
+                    it.filename,
+                    it.additionalInformation.toJSONString()
+                ).joinToString(FIELD_SEPARATOR.toString())
+            }
+
+        private fun decodeDownloadPaths(encoded: String): List<StackbricksDownloadPath> {
+            if (encoded.isEmpty()) return emptyList()
+            return encoded.split(RECORD_SEPARATOR).mapNotNull { record ->
+                val parts = record.split(FIELD_SEPARATOR)
+                if (parts.size < 3) return@mapNotNull null
+                runCatching {
+                    StackbricksDownloadPath.fromJson(
+                        JSONObject().apply {
+                            put("authority", parts[0])
+                            put("filename", parts[1])
+                            put("additionalInformation", JSONObject.parseObject(parts[2]))
+                        }
+                    )
+                }.getOrNull()
+            }
+        }
+
         val Saver: Saver<StackbricksState, *> = listSaver(
             save = {
                 @Suppress("Deprecation")
@@ -35,7 +65,7 @@ data class StackbricksState(
                     it.tmpVersion.value != null,
                     it.tmpVersion.value?.versionCode,
                     it.tmpVersion.value?.versionName,
-                    it.tmpVersion.value?.downloadFilename,
+                    encodeDownloadPaths(it.tmpVersion.value?.possibleDownloadPath ?: emptyList()),
                     it.tmpVersion.value?.isStable,
                     it.tmpVersion.value?.changelog,
                     it.tmpVersion.value?.forceInstall,
@@ -48,12 +78,13 @@ data class StackbricksState(
                 val hasRestoredPackage = it[2] as Boolean
                 val restoredStatus = it[0] as StackbricksStatus
                 val restoredProgress = it[1] as Float?
-                val (status, progress) = when {
-                    restoredStatus == StackbricksStatus.STATUS_DOWNLOADING && hasRestoredPackage ->
+                val (status, progress) = when (restoredStatus) {
+                    StackbricksStatus.STATUS_DOWNLOADING if hasRestoredPackage ->
                         StackbricksStatus.STATUS_CLICK_INSTALL to restoredProgress
-                    restoredStatus == StackbricksStatus.STATUS_DOWNLOADING ||
-                            restoredStatus == StackbricksStatus.STATUS_CHECKING ->
+
+                    StackbricksStatus.STATUS_DOWNLOADING, StackbricksStatus.STATUS_CHECKING ->
                         StackbricksStatus.STATUS_START to null
+
                     else -> restoredStatus to restoredProgress
                 }
                 StackbricksState(
@@ -67,7 +98,7 @@ data class StackbricksState(
                         QiniuVersionData(
                             it[6] as Int,
                             it[7] as String,
-                            it[8] as String,
+                            decodeDownloadPaths(it[8] as String),
                             Instant.ofEpochSecond(it[12] as Long),
                             it[13] as String,
                             it[10] as String,
