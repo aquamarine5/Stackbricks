@@ -6,6 +6,9 @@
 
 package org.aquamarine5.brainspark.stackbricks
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class StackbricksPolicy(
     val versionName: String? = null,
     val versionCode: Long? = null,

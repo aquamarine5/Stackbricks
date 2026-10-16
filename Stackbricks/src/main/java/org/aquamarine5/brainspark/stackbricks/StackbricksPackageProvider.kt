@@ -10,9 +10,27 @@ import android.content.Context
 import androidx.compose.runtime.MutableState
 
 interface StackbricksPackageProvider {
+    val authority: String
+
+    suspend fun downloadPackage(
+        context: Context,
+        versionData: StackbricksVersionData,
+        downloadPath: StackbricksDownloadPath,
+        downloadProgress: MutableState<Float?>? = null
+    ): StackbricksPackageFile
+
+    @Deprecated(
+        "Use the overload taking an explicit StackbricksDownloadPath instead",
+        ReplaceWith("downloadPackage(context, versionData, downloadPath, downloadProgress)")
+    )
     suspend fun downloadPackage(
         context: Context,
         versionData: StackbricksVersionData,
         downloadProgress: MutableState<Float?>? = null
-    ): StackbricksPackageFile
+    ): StackbricksPackageFile = downloadPackage(
+        context,
+        versionData,
+        versionData.possibleDownloadPath.first { it.authority == authority },
+        downloadProgress
+    )
 }

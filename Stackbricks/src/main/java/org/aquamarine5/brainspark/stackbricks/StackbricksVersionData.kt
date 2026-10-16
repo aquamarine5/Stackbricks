@@ -15,9 +15,19 @@ interface StackbricksVersionData : Serializable {
     val packageName: String
     val versionCode: Int
     val versionName: String
-    val downloadFilename: String
+    val possibleDownloadPath: List<StackbricksDownloadPath>
     val releaseDate: Instant
     val changelog: String
+
+    @Deprecated(
+        "Use possibleDownloadPath instead, deprecated in manifestVersion>=4",
+        ReplaceWith("possibleDownloadPath.first().filename")
+    )
+    val downloadFilename: String
+        get() = possibleDownloadPath.firstOrNull()?.filename
+            ?: throw IllegalStateException(
+                "possibleDownloadPath of $versionName is empty, cannot resolve a download filename"
+            )
 
     @Deprecated(
         "Use forceInstallLessVersion instead, deprecated in manifestVersion>=3",

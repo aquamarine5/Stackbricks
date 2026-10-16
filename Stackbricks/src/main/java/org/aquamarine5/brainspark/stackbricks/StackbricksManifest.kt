@@ -6,6 +6,9 @@
 
 package org.aquamarine5.brainspark.stackbricks
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 interface StackbricksManifest {
     val latestStable: StackbricksVersionData
     val latestTest: StackbricksVersionData
