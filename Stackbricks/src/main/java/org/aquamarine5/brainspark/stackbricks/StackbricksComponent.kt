@@ -404,6 +404,8 @@ fun StackbricksComponent(
                                             service.internalVersionData!!
                                         )
                                     }
+                                }.onSuccess {
+                                    status = StackbricksStatus.STATUS_NEWEST
                                 }.onFailure {
                                     hapticFeedback.performHapticFeedback(HapticFeedbackType.Reject)
                                     status = StackbricksStatus.STATUS_INTERNAL_ERROR
