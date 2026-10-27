@@ -6,8 +6,9 @@
 
 package org.aquamarine5.brainspark.stackbricks
 
-class NoAvailablePackageException(exceptions: List<Throwable>) :
-    Exception(
-        "No available package found, exceptions: ${exceptions.joinToString(", ") { "${it::class.java.name}: ${it.localizedMessage ?: it.toString()}" }}"
-    ) {
+class NoAvailablePackageException(
+    val exceptions: List<Throwable>
+) : Exception("没有可用的安装包下载源（${exceptions.toFriendlyMessages()}）") {
+
+    fun getFriendlyExceptionMessages(): String = exceptions.toFriendlyMessages()
 }
