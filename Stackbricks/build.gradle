@@ -28,7 +28,7 @@ protobuf {
         }
     }
 }
-var stackbricksVersion = "3.0.0-rc1"
+var stackbricksVersion = "3.0.0"
 publishing {
     publications {
         release(MavenPublication) {
