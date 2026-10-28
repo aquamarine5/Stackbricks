@@ -6,13 +6,16 @@
 
 package org.aquamarine5.brainspark.stackbricks.providers.qiniu
 
+import androidx.compose.runtime.Immutable
 import org.aquamarine5.brainspark.stackbricks.StackbricksVersionData
+import org.aquamarine5.brainspark.stackbricks.StackbricksDownloadPath
 import java.time.Instant
 
+@Immutable
 data class QiniuVersionData(
     override val versionCode: Int,
     override val versionName: String,
-    override val downloadFilename: String,
+    override val possibleDownloadPath: List<StackbricksDownloadPath>,
     override val releaseDate: Instant,
     override val packageName: String,
     override val changelog: String,

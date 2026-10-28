@@ -12,10 +12,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Request
 import org.aquamarine5.brainspark.stackbricks.NoAvailableManifestException
+import org.aquamarine5.brainspark.stackbricks.StackbricksManifestJsonHelper
 import org.aquamarine5.brainspark.stackbricks.StackbricksMessageProvider
 import org.aquamarine5.brainspark.stackbricks.StackbricksUnsupportedConfigException
 import org.aquamarine5.brainspark.stackbricks.StackbricksVersionData
-import java.time.Instant
 
 class QiniuMessageProvider(
     private val configuration: QiniuConfiguration
@@ -23,7 +23,7 @@ class QiniuMessageProvider(
     companion object {
         const val LOGTAG = "QiniuMessageProvider"
         const val SUPPORTED_PARSE_CONFIG_VERSION = 2
-        const val CURRENT_LATEST_PARSE_CONFIG_VERSION = 3
+        const val CURRENT_LATEST_PARSE_CONFIG_VERSION = 4
     }
 
     override suspend fun getManifest(): QiniuManifest {
@@ -59,32 +59,8 @@ class QiniuMessageProvider(
                             )
                         }
                         return@use QiniuManifest(
-                            baseJson.getJSONObject("latestStable").run {
-                                QiniuVersionData(
-                                    getInteger("versionCode"),
-                                    getString("versionName"),
-                                    getString("downloadUrl"),
-                                    Instant.ofEpochMilli(getLong("releaseDate")),
-                                    getString("packageName"),
-                                    getString("changelog"),
-                                    getBoolean("forceInstall"),
-                                    true,
-                                    getLong("forceInstallLessVersion") ?: -1
-                                )
-                            },
-                            baseJson.getJSONObject("latestTest").run {
-                                QiniuVersionData(
-                                    getInteger("versionCode"),
-                                    getString("versionName"),
-                                    getString("downloadUrl"),
-                                    Instant.ofEpochMilli(getLong("releaseDate")),
-                                    getString("packageName"),
-                                    getString("changelog"),
-                                    getBoolean("forceInstall"),
-                                    false,
-                                    getLong("forceInstallLessVersion") ?: -1
-                                )
-                            },
+                            parseVersionData(baseJson.getJSONObject("latestStable"), isStable = true),
+                            parseVersionData(baseJson.getJSONObject("latestTest"), isStable = false),
                             version
                         )
                     }
@@ -97,6 +73,26 @@ class QiniuMessageProvider(
             }
         }
         throw NoAvailableManifestException(exceptions)
+    }
+
+    @Suppress("DEPRECATION")
+    private fun parseVersionData(json: JSONObject, isStable: Boolean): QiniuVersionData {
+        val fields = StackbricksManifestJsonHelper.parseVersionFields(json, json.getString("downloadUrl"))
+        if (fields.possibleDownloadPath.isEmpty())
+            throw IllegalStateException(
+                "${LOGTAG}: version ${fields.versionName} declares neither possibleDownloadPath nor downloadUrl"
+            )
+        return QiniuVersionData(
+            fields.versionCode,
+            fields.versionName,
+            fields.possibleDownloadPath,
+            fields.releaseDate,
+            fields.packageName,
+            fields.changelog,
+            fields.forceInstall,
+            isStable,
+            fields.forceInstallLessVersion
+        )
     }
 
     @Deprecated(

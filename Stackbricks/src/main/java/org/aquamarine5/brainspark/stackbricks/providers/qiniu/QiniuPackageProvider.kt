@@ -18,6 +18,7 @@ import org.aquamarine5.brainspark.stackbricks.ProgressedResponseBody
 import org.aquamarine5.brainspark.stackbricks.StackbricksPackageFile
 import org.aquamarine5.brainspark.stackbricks.StackbricksPackageProvider
 import org.aquamarine5.brainspark.stackbricks.StackbricksVersionData
+import org.aquamarine5.brainspark.stackbricks.StackbricksDownloadPath
 import java.io.File
 
 class QiniuPackageProvider(
@@ -27,18 +28,25 @@ class QiniuPackageProvider(
         const val TAG = "QiniuPackageProvider"
     }
 
+    override val authority: String = StackbricksDownloadPath.QINIU_AUTHORITY
+
     override suspend fun downloadPackage(
         context: Context,
         versionData: StackbricksVersionData,
+        downloadPath: StackbricksDownloadPath,
         downloadProgress: MutableState<Float?>?
     ): StackbricksPackageFile {
+        val path = downloadPath as? QiniuDownloadPath
+            ?: throw IllegalArgumentException(
+                "$TAG can only handle ${StackbricksDownloadPath.QINIU_AUTHORITY} paths, got ${downloadPath.authority}"
+            )
         val exceptions = mutableListOf<Throwable>()
-        configuration.possibleConfigurations.forEach {
+        val isHttps = path.isHttps ?: configuration.isHttps
+        val possibleHosts = path.host?.let { listOf(it) } ?: configuration.possibleConfigurations.map { it.first }
+        possibleHosts.forEach {
             runCatching {
                 val req = Request.Builder()
-                    .url(
-                        "${if (configuration.isHttps) "https" else "http"}://${it.first}/${versionData.downloadFilename}"
-                    )
+                    .url("${if (isHttps) "https" else "http"}://$it/${path.filename}")
                     .get()
                 configuration.referer?.let { referer ->
                     req.addHeader("Referer", referer)

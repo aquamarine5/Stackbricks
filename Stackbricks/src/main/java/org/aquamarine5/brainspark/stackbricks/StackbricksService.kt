@@ -17,16 +17,43 @@ import kotlin.time.Duration.Companion.milliseconds
 @Immutable
 open class StackbricksService(
     private val context: Context,
-    private val messageProvider: StackbricksMessageProvider,
-    private val packageProvider: StackbricksPackageProvider,
+    private val possibleMessageProvider: List<StackbricksMessageProvider>,
+    private val possiblePackageProvider: List<StackbricksPackageProvider>,
     val state: StackbricksState,
     val stackbricksPolicy: StackbricksPolicy? = null,
-    private val checkCurrentVersionIsTest: (String, Long) -> Boolean = { versionName, _ ->
-        versionName.contains("beta", true) ||
-                versionName.contains("alpha", true) ||
-                versionName.contains("rc", true)
-    }
+    private val checkCurrentVersionIsTest: (String, Long) -> Boolean = DEFAULT_TEST_CHANNEL_CHECK
 ) {
+    @Deprecated(
+        "Use the constructor taking possibleMessageProvider and possiblePackageProvider instead",
+        ReplaceWith(
+            "StackbricksService(context, listOf(messageProvider), listOf(packageProvider), state, stackbricksPolicy, checkCurrentVersionIsTest)",
+            "org.aquamarine5.brainspark.stackbricks.StackbricksService"
+        )
+    )
+    constructor(
+        context: Context,
+        messageProvider: StackbricksMessageProvider,
+        packageProvider: StackbricksPackageProvider,
+        state: StackbricksState,
+        stackbricksPolicy: StackbricksPolicy? = null,
+        checkCurrentVersionIsTest: (String, Long) -> Boolean = DEFAULT_TEST_CHANNEL_CHECK
+    ) : this(
+        context,
+        listOf(messageProvider),
+        listOf(packageProvider),
+        state,
+        stackbricksPolicy,
+        checkCurrentVersionIsTest
+    )
+
+    companion object {
+        internal val DEFAULT_TEST_CHANNEL_CHECK: (String, Long) -> Boolean = { versionName, _ ->
+            versionName.contains("beta", true) ||
+                    versionName.contains("alpha", true) ||
+                    versionName.contains("rc", true)
+        }
+    }
+
     private var _manifest: StackbricksManifest? = null
 
     val internalVersionData by state.tmpVersion
@@ -52,17 +79,24 @@ open class StackbricksService(
     }
 
     open suspend fun getManifest(dismissCache: Boolean = false): StackbricksManifest {
-        return if (_manifest == null || dismissCache) {
-            messageProvider.getManifest().apply {
-                _manifest = this
-            }
-        } else {
-            _manifest!!
+        if (_manifest != null && !dismissCache) return _manifest!!
+        val exceptions = mutableListOf<Throwable>()
+        possibleMessageProvider.forEach { provider ->
+            runCatching { provider.getManifest() }
+                .onSuccess { manifest ->
+                    _manifest = manifest
+                    return manifest
+                }
+                .onFailure {
+                    it.printStackTrace()
+                    exceptions.add(it)
+                }
         }
+        throw NoAvailableManifestException(exceptions)
     }
 
     suspend fun getCurrentChangelog(): String {
-        isNeedUpdate()?.let {
+        internalVersionData?.takeIf { getCurrentVersion() < it.versionCode }?.let {
             return it.changelog
         }
         if (checkCurrentIsTestChannel())
@@ -119,15 +153,38 @@ open class StackbricksService(
     open suspend fun downloadPackage(
         withProgress: Boolean = true
     ): StackbricksPackageFile {
-        if (state.tmpVersion.value == null)
-            throw NullPointerException("Version data is null, please call isNeedUpdate() or isBetaVersionAvailable() first")
-        return packageProvider.downloadPackage(
-            context,
-            state.tmpVersion.value!!,
-            if (withProgress) state.downloadingProgress else null
-        ).apply {
-            state.tmpPackage = this
+        val versionData = state.tmpVersion.value
+            ?: throw NullPointerException(
+                "Version data is null, please call isNeedUpdate() or isBetaVersionAvailable() first"
+            )
+        val exceptions = mutableListOf<Throwable>()
+        versionData.possibleDownloadPath.forEach { downloadPath ->
+            val provider = possiblePackageProvider
+                .firstOrNull { it.authority == downloadPath.authority }
+            if (provider == null) {
+                exceptions.add(
+                    IllegalStateException(
+                        "No package provider registered for authority ${downloadPath.authority}"
+                    )
+                )
+                return@forEach
+            }
+            runCatching {
+                provider.downloadPackage(
+                    context,
+                    versionData,
+                    downloadPath,
+                    if (withProgress) state.downloadingProgress else null
+                )
+            }.onSuccess { packageFile ->
+                state.tmpPackage = packageFile
+                return packageFile
+            }.onFailure {
+                it.printStackTrace()
+                exceptions.add(it)
+            }
         }
+        throw NoAvailablePackageException(exceptions)
     }
 
     open suspend fun isNewerVersion(dismissCache: Boolean = false): Boolean {

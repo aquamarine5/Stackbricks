@@ -6,8 +6,10 @@
 
 package org.aquamarine5.brainspark.stackbricks.providers.qiniu
 
+import androidx.compose.runtime.Immutable
 import org.aquamarine5.brainspark.stackbricks.StackbricksManifest
 
+@Immutable
 data class QiniuManifest(
     override val latestStable: QiniuVersionData,
     override val latestTest: QiniuVersionData,

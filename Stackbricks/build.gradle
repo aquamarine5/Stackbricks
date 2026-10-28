@@ -10,7 +10,7 @@ plugins {
     id("kotlin-parcelize")
     alias(libs.plugins.kotlin.compose)
     id("com.google.protobuf") version "0.9.6"
-    id("org.jetbrains.kotlin.plugin.serialization") version "2.4.10"
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.4.21"
 }
 
 protobuf {
@@ -28,7 +28,7 @@ protobuf {
         }
     }
 }
-var stackbricksVersion = "2.4.20"
+var stackbricksVersion = "3.0.0"
 publishing {
     publications {
         release(MavenPublication) {

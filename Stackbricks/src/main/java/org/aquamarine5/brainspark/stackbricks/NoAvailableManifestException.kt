@@ -6,6 +6,9 @@
 
 package org.aquamarine5.brainspark.stackbricks
 
-class NoAvailableManifestException(exceptions: List<Throwable>) :
-    Exception("No available manifest found, exceptions: ${exceptions.joinToString(", ") { "${it::class.java.name}: ${it.localizedMessage ?: it.toString()}}" }}") {
+class NoAvailableManifestException(
+    val exceptions: List<Throwable>
+) : Exception("没有可用的 Manifest 数据源（${exceptions.toFriendlyMessages()}）") {
+
+    fun getFriendlyExceptionMessages(): String = exceptions.toFriendlyMessages()
 }

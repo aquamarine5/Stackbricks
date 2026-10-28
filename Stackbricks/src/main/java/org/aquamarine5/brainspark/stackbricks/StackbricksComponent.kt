@@ -57,10 +57,12 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
@@ -73,6 +75,9 @@ import androidx.compose.ui.zIndex
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import org.aquamarine5.brainspark.stackbricks.providers.cloudflare.CloudflareConfiguration
+import org.aquamarine5.brainspark.stackbricks.providers.cloudflare.CloudflareMessageProvider
+import org.aquamarine5.brainspark.stackbricks.providers.cloudflare.CloudflarePackageProvider
 import org.aquamarine5.brainspark.stackbricks.providers.qiniu.QiniuConfiguration
 import org.aquamarine5.brainspark.stackbricks.providers.qiniu.QiniuMessageProvider
 import org.aquamarine5.brainspark.stackbricks.providers.qiniu.QiniuPackageProvider
@@ -547,7 +552,7 @@ fun StackbricksComponent(
                                     fontWeight = FontWeight.Bold
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Text(changelog)
+                                Text(parseChangelogToAnnotatedString(changelog, Color.Gray))
                             }
                         }
                     )
@@ -728,13 +733,66 @@ private fun Preview() {
             "localhost" to "stackbricks_manifest_v3.json"
         )
     )
+    val cloudflareConfiguration = CloudflareConfiguration(
+        possibleConfigurations = listOf(
+            "apk.example.com" to "stackbricks_manifest_v4.json"
+        ),
+        defaultBaseUrl = "https://apk.example.com"
+    )
     StackbricksComponent(
         StackbricksService(
-            LocalContext.current, QiniuMessageProvider(qiniuConfiguration),
-            packageProvider = QiniuPackageProvider(qiniuConfiguration),
+            LocalContext.current,
+            possibleMessageProvider = listOf(
+                CloudflareMessageProvider(cloudflareConfiguration),
+                QiniuMessageProvider(qiniuConfiguration)
+            ),
+            possiblePackageProvider = listOf(
+                CloudflarePackageProvider(cloudflareConfiguration),
+                QiniuPackageProvider(qiniuConfiguration)
+            ),
             state = rememberStackbricksStatus()
         )
     )
+}
+
+private fun parseChangelogToAnnotatedString(
+    raw: String,
+    gray: Color
+): AnnotatedString {
+    var boldDepth = 0
+    var italicDepth = 0
+    var underlineDepth = 0
+    var grayDepth = 0
+    fun currentStyle() = SpanStyle(
+        fontWeight = if (boldDepth > 0) FontWeight.Bold else null,
+        fontStyle = if (italicDepth > 0) FontStyle.Italic else null,
+        textDecoration = if (underlineDepth > 0) TextDecoration.Underline else null,
+        color = if (grayDepth > 0) gray else Color.Unspecified
+    )
+    return buildAnnotatedString {
+        var pos = 0
+        Regex("<(/?)([biug])>", RegexOption.IGNORE_CASE).findAll(raw).forEach { match ->
+            if (match.range.first > pos) {
+                withStyle(currentStyle()) {
+                    append(raw.substring(pos, match.range.first))
+                }
+            }
+            val isClosing = match.groupValues[1] == "/"
+            val delta = if (isClosing) -1 else 1
+            when (match.groupValues[2].lowercase()) {
+                "b" -> boldDepth = (boldDepth + delta).coerceAtLeast(0)
+                "i" -> italicDepth = (italicDepth + delta).coerceAtLeast(0)
+                "u" -> underlineDepth = (underlineDepth + delta).coerceAtLeast(0)
+                "g" -> grayDepth = (grayDepth + delta).coerceAtLeast(0)
+            }
+            pos = match.range.last + 1
+        }
+        if (pos < raw.length) {
+            withStyle(currentStyle()) {
+                append(raw.substring(pos))
+            }
+        }
+    }
 }
 
 fun Throwable.isWebException(): Boolean =
